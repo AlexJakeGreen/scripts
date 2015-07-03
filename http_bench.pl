@@ -33,7 +33,7 @@ my $concurrency = 60;
 # method to connect. GET, POST..
 my $method = 'GET';
 
-# How many redirects to follow. Login portal needs 2
+# How many redirects to follow
 my $max_recurse = 10;
 
 # user agent string. Webserver may block us after several request by this string
@@ -248,9 +248,11 @@ Fix error AnyEvent::Util: Runtime error in AnyEvent::guard callback: Can't call 
 
 Implement random user agent string
 
+Implement urls from file
+
 =head1 AUTHORS
 
-    alexander.litvinov@toatech.com
+    Alexander Litvinov greenulito@gmail.com
 
 =cut
 
