@@ -66,42 +66,27 @@ void set_zsp_flags(state_t *state, uint16_t value) {
   state->cc.p = parity16(value);
 }
 
-// LXI H, data16 -> opcode_lxi(state)
-void opcode_lxi(state_t *state) {
-  // (rh)(rl) <- (byte3)(byte2)
-  uint8_t reg_pair_n = state->memory[state->pc] >> 3; /* Actually LXI has opcode 0b00RP0001
-                                                         and no need to check with mask 0b00110000 */
-  *(&state->b + reg_pair_n + 1) = state->memory[++state->pc];
-  *(&state->b + reg_pair_n) = state->memory[++state->pc];
+void print_state(state_t *state) {
+  printf("\t==PC:0x%04x SP:0x%04x A:0x%02x B:0x%02x C:0x%02x D:0x%02x E:0x%02x H:0x%02x L:0x%02x\n",
+         state->pc, state->sp, state->a, state->b, state->c, state->d, state->e, state->h, state->l);
+  printf("\t==Z:%01x S:%01x P:%01x Cy:%01x Ac:%01x\n",
+         state->cc.z, state->cc.s, state->cc.p, state->cc.cy, state->cc.ac);
 }
 
-void opcode_stax(state_t *state, uint8_t *reg_h) {
-  // ((rh)(rl)) <- (A)
-  state->memory[(*reg_h) << 8 | *(reg_h + 1)] = state->a;
-}
-
-void opcode_ldax(state_t *state, uint8_t *reg_h) {
-  // (A) <- ((rp))
-  state->a = state->memory[(*reg_h << 8) | *(reg_h + 1)];
-}
-
-void opcode_inx(state_t *state __attribute__((unused)), uint8_t *reg_h) {
-  // (rh)(rl) <- (rh)(rl) + 1
-  *(reg_h + 1) += 1;
-  if (*(reg_h + 1) == 0)
-      *reg_h += 1;
+void unimplemented_instruction(state_t *state) {
+  unsigned char opcode = state->memory[state->pc];
+    
+  printf("Error: Unimplemented instruction: 0x%02x\n", opcode);
+  printf("--------------------------------\n");
+  print_state(state);
+  disassemble_opcode_8080(state->memory, state->pc);
+    
+  exit(EXIT_FAILURE);
 }
 
 void opcode_mvi(state_t *state, uint8_t *reg) {
   // (B) <- (byte2)
   *reg = state->memory[++state->pc];
-}
-
-void opcode_dcx(state_t *state __attribute__((unused)), uint8_t *reg) {
-  uint16_t initial = (*reg << 8) | *(reg + 1);
-  initial = initial - 1;
-  *reg = (initial >> 8) & 0xff;
-  *(reg + 1) = initial & 0xff;
 }
 
 void opcode_add(state_t *state, uint8_t reg) {
@@ -165,13 +150,13 @@ void opcode_cmp(state_t *state, uint8_t reg) {
 }
 
 void opcode_pop(state_t *state, uint8_t *reg) {
-  *(reg + 1) = state->memory[state->sp++];
+  *(reg - 1) = state->memory[state->sp++];
   *reg = state->memory[state->sp++];
 }
 
 void opcode_push(state_t *state, uint8_t *reg) {
   state->memory[--state->sp] = *reg;
-  state->memory[--state->sp] = *(reg + 1);
+  state->memory[--state->sp] = *(reg - 1);
 }
 
 void stack_put_addr16(state_t *state, uint16_t addr) {
@@ -185,24 +170,6 @@ void stack_put_addr16(state_t *state, uint16_t addr) {
 
 uint16_t stack_take_addr16(state_t *state) {
   return state->memory[state->sp++] | (state->memory[state->sp++] << 8);
-}
-
-void print_state(state_t *state) {
-  printf("\t==PC:0x%04x SP:0x%04x A:0x%02x B:0x%02x C:0x%02x D:0x%02x E:0x%02x H:0x%02x L:0x%02x\n",
-         state->pc, state->sp, state->a, state->b, state->c, state->d, state->e, state->h, state->l);
-  printf("\t==Z:%01x S:%01x P:%01x Cy:%01x Ac:%01x\n",
-         state->cc.z, state->cc.s, state->cc.p, state->cc.cy, state->cc.ac);
-}
-
-void unimplemented_instruction(state_t *state) {
-  unsigned char opcode = state->memory[state->pc];
-    
-  printf("Error: Unimplemented instruction: 0x%02x\n", opcode);
-  printf("--------------------------------\n");
-  print_state(state);
-  disassemble_opcode_8080(state->memory, state->pc);
-    
-  exit(EXIT_FAILURE);
 }
 
 int disassemble_opcode_8080(unsigned char *codebuffer, int pc) {
@@ -543,11 +510,31 @@ int emulate_op(state_t *state) {
   switch (*opcode) {
   case 0x00: break; // NOP
   case 0x01: // LXI B, data 16
+    // (rh)(rl) <- (byte3)(byte2)
+    state->c = opcode[1];
+    state->b = opcode[2];
+    state->pc += 2;
+    break;
   case 0x11: // LXI D, data 16
+    // (rh)(rl) <- (byte3)(byte2)
+    state->e = opcode[1];
+    state->d = opcode[2];
+    state->pc += 2;
+    break;
   case 0x21: // LXI H, data 16
-    opcode_lxi(state); break;
-  case 0x02: opcode_stax(state, &state->b); break; // STAX B
-  case 0x03: opcode_inx(state, &state->b); break; // INX B
+    // (rh)(rl) <- (byte3)(byte2)
+    state->l = opcode[1];
+    state->h = opcode[2];
+    state->pc += 2;
+    break;
+  case 0x02: // STAX B
+    // ((rh)(rl)) <- (A)
+    state->memory[state->bc] = state->a;
+    break;
+  case 0x03: // INX B
+    // (rh)(rl) <- (rh)(rl) + 1
+    state->bc++;
+    break;
   case 0x04: set_zsp_flags(state, ++state->b); break; // INR B
   case 0x05: set_zsp_flags(state, --state->b); break; // DCR B
   case 0x06: opcode_mvi(state, &state->b); break; // MVI B, data 8
@@ -564,7 +551,6 @@ int emulate_op(state_t *state) {
   case 0x08: unimplemented_instruction(state); break; // No instruction
   case 0x09: // DAD B
     /*
-      Add register pair to H and L
       (H)(L) <- (H)(L) + (B)(C)
       Note: Only the CY flag is affected. It is set
       if there is a carry out of the double precision add;
@@ -572,20 +558,17 @@ int emulate_op(state_t *state) {
       Flags: CY
     */
     {
-      uint16_t hl = (state->h << 8) | state->l;
-      uint16_t bc = (state->b << 8) | state->c;
-      uint32_t res = hl + bc;
-      state->h = (res & 0xff00) >> 8;
-      state->l = res & 0xff;
-      if (res >> 16) {
-        state->cc.cy = 0x1;
-      } else {
-        state->cc.cy = 0x0;
-      }
+      uint32_t res = state->hl + state->bc;
+      state->hl = res & 0xffff;
+      state->cc.cy = ((res & 0xffff0000) != 0);
     }
     break;
-  case 0x0a: opcode_ldax(state, &state->b); break; // LDAX B
-  case 0x0b: opcode_dcx(state, &state->b); break; // DCX B
+  case 0x0a: // LDAX B
+    state->a = state->memory[state->bc];
+    break;
+  case 0x0b: // DCX B
+    state->bc--;
+    break;
   case 0x0c: set_zsp_flags(state, ++state->c); break;// INR C
   case 0x0d: set_zsp_flags(state, --state->c); break; // DCR C
   case 0x0e: opcode_mvi(state, &state->c); break; // MVI C, data 8
@@ -598,8 +581,13 @@ int emulate_op(state_t *state) {
     }
     break;
   case 0x10: unimplemented_instruction(state); break;  // No instruction
-  case 0x12: opcode_stax(state, &state->d); break; // STAX D
-  case 0x13: opcode_inx(state, &state->d); break; // INX D
+  case 0x12: // STAX D
+    state->memory[state->de] = state->a;
+    break;
+  case 0x13: // INX D
+    // (rh)(rl) <- (rh)(rl) + 1
+    state->de++;
+    break;
   case 0x14: set_zsp_flags(state, ++state->d); break; // INR D
   case 0x15: set_zsp_flags(state, --state->d); break; // DCR D
   case 0x16: opcode_mvi(state, &state->d); break; // MVI D, data
@@ -617,16 +605,18 @@ int emulate_op(state_t *state) {
   case 0x18: unimplemented_instruction(state); break;  // No instruction
   case 0x19: // DAD D
     {
-      uint32_t de = (state->d << 8) | state->e;
-      uint32_t hl = (state->h << 8) | state->l;
-      uint32_t res = hl + de;
-      state->h = (res & 0xff00) >> 8;
-      state->l = res & 0xff;
+      uint32_t res = state->hl + state->de;
+      state->hl = res & 0xffff;
       state->cc.cy = ((res & 0xffff0000) != 0);
     }
     break;
-  case 0x1a: opcode_ldax(state, &state->d); break; // LDAX D // (A) <- ((rp))
-  case 0x1b: opcode_dcx(state, &state->d); break; // DCX D
+  case 0x1a: // LDAX D
+    // (A) <- ((rp))
+    state->a = state->memory[state->de];
+    break;
+  case 0x1b: // DCX D
+    state->de--;
+    break;
   case 0x1c: set_zsp_flags(state, ++state->e); break; // INR E
   case 0x1d: set_zsp_flags(state, --state->e); break; // DCR E
   case 0x1e: opcode_mvi(state, &state->e); break; // MVI E, data
@@ -651,7 +641,10 @@ int emulate_op(state_t *state) {
 
     state->pc += 2;
     break;
-  case 0x23: opcode_inx(state, &state->h); break; // INX H
+  case 0x23: // INX H
+    // (rh)(rl) <- (rh)(rl) + 1
+    state->hl++;
+    break;
   case 0x24: set_zsp_flags(state, ++state->h); break; // INR H
   case 0x25: set_zsp_flags(state, --state->h); break; // DCR H
   case 0x26: opcode_mvi(state, &state->h); break; // MVI H, data 8
@@ -690,10 +683,8 @@ int emulate_op(state_t *state) {
   case 0x28: unimplemented_instruction(state); break;  // No instruction
   case 0x29: // DAD H
     {
-      uint32_t hl = (state->h << 8) | state->l;
-      uint32_t res = hl + hl;
-      state->h = (res & 0xff00) >> 8;
-      state->l = res & 0xff;
+      uint32_t res = state->hl + state->hl;
+      state->hl = res & 0xffff;
       state->cc.cy = ((res & 0xffff0000) != 0);
     }
     break;
@@ -706,7 +697,9 @@ int emulate_op(state_t *state) {
     state->h = state->memory[((opcode[2] << 8) | opcode[1]) + 1];
     state->pc += 2;
     break;
-  case 0x2b: opcode_dcx(state, &state->h); break; // DCX H
+  case 0x2b: // DCX H
+    state->hl--;
+    break;
   case 0x2c: set_zsp_flags(state, ++state->l); break; // INR L
   case 0x2d: set_zsp_flags(state, --state->l); break; // DCR L
   case 0x2e: opcode_mvi(state, &state->l); break; // MVI L, data 8
@@ -730,22 +723,21 @@ int emulate_op(state_t *state) {
   case 0x33: state->sp = state->sp + 1; break; // INX SP
   case 0x34: // INR M
     {
-      uint8_t res = state->memory[(state->h << 8) | state->l] + 1;
+      uint8_t res = state->memory[state->hl] + 1;
       set_zsp_flags(state, res);
-      state->memory[(state->h << 8) | state->l] = res;
-      set_zsp_flags(state, res);
+      state->memory[state->hl] = res;
     }
     break;
   case 0x35: // DCR M
     {
-      uint8_t res = state->memory[(state->h << 8) | state->l] - 1;
-      state->memory[(state->h << 8) | state->l] = res;
+      uint8_t res = state->memory[state->hl] - 1;
+      state->memory[state->hl] = res;
       set_zsp_flags(state, res);
     }
     break;
   case 0x36: // MVI M, data 8
     // ((H)(L)) <- (byte 2)
-    state->memory[(state->h << 8) | state->l] = opcode[1];
+    state->memory[state->hl] = opcode[1];
     state->pc++;
     break;
   case 0x37: state->cc.cy = 1; break; // STC. (CY) <- 1
@@ -754,12 +746,9 @@ int emulate_op(state_t *state) {
     // Add registerpair to H and L
     // (H)(L) <- (H)(L) + (rh)(rl)
     {
-      uint32_t initial = (state->h << 8) | state->l;
-      initial += state->sp;
-      state->cc.cy = (initial >> 16) & 0x1;
-      initial = initial & 0xffff;
-      state->h = initial >> 8;
-      state->l = initial & 0xff;
+      uint32_t res = state->hl + state->sp;
+      state->cc.cy = (res >> 16) & 0x1;
+      state->hl = res & 0xffff;
     }
     break;
   case 0x3a: // LDA data 16
@@ -778,7 +767,7 @@ int emulate_op(state_t *state) {
   case 0x43: state->b = state->e; break; // MOV B, E
   case 0x44: state->b = state->h; break; // MOV B, H
   case 0x45: state->b = state->l; break; // MOV B, L
-  case 0x46: state->b = state->memory[(state->h << 8) | state->l]; break; // MOV B, M
+  case 0x46: state->b = state->memory[state->hl]; break; // MOV B, M
   case 0x47: state->b = state->a; break; // MOV B, A
   case 0x48: state->c = state->b; break; // MOV C, B
   case 0x49: state->c = state->c; break; // MOV C, C
@@ -786,7 +775,7 @@ int emulate_op(state_t *state) {
   case 0x4b: state->c = state->e; break; // MOV C, E
   case 0x4c: state->c = state->h; break; // MOV C, H
   case 0x4d: state->c = state->l; break; // MOV C, L
-  case 0x4e: state->c = state->memory[(state->h << 8) | state->l]; break; // MOV C, M
+  case 0x4e: state->c = state->memory[state->hl]; break; // MOV C, M
   case 0x4f: state->c = state->a; break; // MOV C, A
   case 0x50: state->d = state->b; break; // MOV D, B
   case 0x51: state->d = state->c; break; // MOV D, C
@@ -794,7 +783,7 @@ int emulate_op(state_t *state) {
   case 0x53: state->d = state->e; break; // MOV D, E
   case 0x54: state->d = state->h; break; // MOV D, H
   case 0x55: state->d = state->l; break; // MOV D, L
-  case 0x56: state->d = state->memory[(state->h << 8) | state->l]; break; // MOV D, M
+  case 0x56: state->d = state->memory[state->hl]; break; // MOV D, M
   case 0x57: state->d = state->a; break; // MOV D, A
   case 0x58: state->e = state->b; break; // MOV E, B
   case 0x59: state->e = state->c; break; // MOV E, C
@@ -802,7 +791,7 @@ int emulate_op(state_t *state) {
   case 0x5b: state->e = state->e; break; // MOV E, E
   case 0x5c: state->e = state->h; break; // MOV E, H
   case 0x5d: state->e = state->l; break; // MOV E, L
-  case 0x5e: state->e = state->memory[(state->h << 8) | state->l]; break; // MOV E, M
+  case 0x5e: state->e = state->memory[state->hl]; break; // MOV E, M
   case 0x5f: state->e = state->a; break; // MOV E, A
   case 0x60: state->h = state->b; break; // MOV H, B
   case 0x61: state->h = state->c; break; // MOV H, C
@@ -810,7 +799,7 @@ int emulate_op(state_t *state) {
   case 0x63: state->h = state->e; break; // MOV H, E
   case 0x64: state->h = state->h; break; // MOV H, H
   case 0x65: state->h = state->l; break; // MOV H, L
-  case 0x66: state->h = state->memory[(state->h << 8) | state->l]; break; // MOV H, M
+  case 0x66: state->h = state->memory[state->hl]; break; // MOV H, M
   case 0x67: state->h = state->a; break; // MOV H, A
   case 0x68: state->l = state->b; break; // MOV L, B
   case 0x69: state->l = state->c; break; // MOV L, C
@@ -818,23 +807,23 @@ int emulate_op(state_t *state) {
   case 0x6b: state->l = state->e; break; // MOV L, E
   case 0x6c: state->l = state->h; break; // MOV L, H
   case 0x6d: state->l = state->l; break; // MOV L, L
-  case 0x6e: state->l = state->memory[(state->h << 8) | state->l]; break; // MOV L, M
+  case 0x6e: state->l = state->memory[state->hl]; break; // MOV L, M
   case 0x6f: state->l = state->a; break; // MOV L, A
-  case 0x70: state->memory[(state->h << 8) | state->l] = state->b; break; // MOV M, B
-  case 0x71: state->memory[(state->h << 8) | state->l] = state->d; break; // MOV M, C
-  case 0x72: state->memory[(state->h << 8) | state->l] = state->d; break; // MOV M, D
-  case 0x73: state->memory[(state->h << 8) | state->l] = state->e; break; // MOV M, E
-  case 0x74: state->memory[(state->h << 8) | state->l] = state->h; break; // MOV M, H
-  case 0x75: state->memory[(state->h << 8) | state->l] = state->l; break; // MOV M, L
-  case 0x76: unimplemented_instruction(state); break; // TODO: HLT
-  case 0x77: state->memory[(state->h << 8) | state->l] = state->a; break; // MOV M, A
+  case 0x70: state->memory[state->hl] = state->b; break; // MOV M, B
+  case 0x71: state->memory[state->hl] = state->d; break; // MOV M, C
+  case 0x72: state->memory[state->hl] = state->d; break; // MOV M, D
+  case 0x73: state->memory[state->hl] = state->e; break; // MOV M, E
+  case 0x74: state->memory[state->hl] = state->h; break; // MOV M, H
+  case 0x75: state->memory[state->hl] = state->l; break; // MOV M, L
+  case 0x76: exit(EXIT_SUCCESS); break; // TODO: HLT
+  case 0x77: state->memory[state->hl] = state->a; break; // MOV M, A
   case 0x78: state->a = state->b; break; // MOV A, B
   case 0x79: state->a = state->c; break; // MOV A, C
   case 0x7a: state->a = state->d; break; // MOV A, D
   case 0x7b: state->a = state->e; break; // MOV A, E
   case 0x7c: state->a = state->h; break; // MOV A, H
   case 0x7d: state->a = state->l; break; // MOV A, L
-  case 0x7e: state->a = state->memory[(state->h << 8) | state->l]; break; // MOV A, M
+  case 0x7e: state->a = state->memory[state->hl]; break; // MOV A, M
   case 0x7f: state->a = state->a; break; // MOV A, A
   case 0x80: opcode_add(state, state->b); break; // ADD B
   case 0x81: opcode_add(state, state->c); break; // ADD C
@@ -842,7 +831,7 @@ int emulate_op(state_t *state) {
   case 0x83: opcode_add(state, state->e); break; // ADD E
   case 0x84: opcode_add(state, state->h); break; // ADD H
   case 0x85: opcode_add(state, state->l); break; // ADD L
-  case 0x86: opcode_add(state, state->memory[(state->h << 8) | state->l]); break; // ADD M
+  case 0x86: opcode_add(state, state->memory[state->hl]); break; // ADD M
   case 0x87: opcode_add(state, state->a); break; // ADD A
   case 0x88: opcode_adc(state, state->b); break; // ADC B
   case 0x89: opcode_adc(state, state->c); break; // ADC C
@@ -850,7 +839,7 @@ int emulate_op(state_t *state) {
   case 0x8b: opcode_adc(state, state->e); break; // ADC E
   case 0x8c: opcode_adc(state, state->h); break; // ADC H
   case 0x8d: opcode_adc(state, state->l); break; // ADC L
-  case 0x8e: opcode_adc(state, state->memory[(state->h << 8) | state->l]); break; // ADC M
+  case 0x8e: opcode_adc(state, state->memory[state->hl]); break; // ADC M
   case 0x8f: opcode_adc(state, state->a); break; // ADC A
   case 0x90: opcode_sub(state, state->b); break; // SUB B
   case 0x91: opcode_sub(state, state->c); break; // SUB C
@@ -858,7 +847,7 @@ int emulate_op(state_t *state) {
   case 0x93: opcode_sub(state, state->e); break; // SUB E
   case 0x94: opcode_sub(state, state->h); break; // SUB H
   case 0x95: opcode_sub(state, state->l); break; // SUB L
-  case 0x96: opcode_sub(state, state->memory[(state->h << 8) | state->l]); break; // SUB M
+  case 0x96: opcode_sub(state, state->memory[state->hl]); break; // SUB M
   case 0x97: opcode_sub(state, state->a); break; // SUB A. Return 0?
   case 0x98: opcode_sbb(state, state->b); break; // SBB B
   case 0x99: opcode_sbb(state, state->c); break; // SBB C
@@ -866,7 +855,7 @@ int emulate_op(state_t *state) {
   case 0x9b: opcode_sbb(state, state->e); break; // SBB E
   case 0x9c: opcode_sbb(state, state->h); break; // SBB H
   case 0x9d: opcode_sbb(state, state->l); break; // SBB L
-  case 0x9e: opcode_sbb(state, state->memory[(state->h << 8) | state->l]); break; // SBB M
+  case 0x9e: opcode_sbb(state, state->memory[state->hl]); break; // SBB M
   case 0x9f: opcode_sbb(state, state->a); break; // SBB A. Return 0xff?
   case 0xa0: opcode_ana(state, state->b); break; // ANA B
   case 0xa1: opcode_ana(state, state->c); break; // ANA C
@@ -874,7 +863,7 @@ int emulate_op(state_t *state) {
   case 0xa3: opcode_ana(state, state->e); break; // ANA E
   case 0xa4: opcode_ana(state, state->h); break; // ANA H
   case 0xa5: opcode_ana(state, state->l); break; // ANA L
-  case 0xa6: opcode_ana(state, state->memory[(state->h << 8) || state->l]); break; // ANA M
+  case 0xa6: opcode_ana(state, state->memory[state->hl]); break; // ANA M
   case 0xa7: opcode_ana(state, state->a); break; // ANA A
   case 0xa8: opcode_xra(state, state->b); break; // XRA B
   case 0xa9: opcode_xra(state, state->c); break; // XRA C
@@ -882,7 +871,7 @@ int emulate_op(state_t *state) {
   case 0xab: opcode_xra(state, state->e); break; // XRA E
   case 0xac: opcode_xra(state, state->h); break; // XRA H
   case 0xad: opcode_xra(state, state->l); break; // XRA L
-  case 0xae: opcode_xra(state, state->memory[(state->h << 8) | state->l]); break; // XRA M
+  case 0xae: opcode_xra(state, state->memory[state->hl]); break; // XRA M
   case 0xaf: opcode_xra(state, state->a); break; // XRA A
   case 0xb0: opcode_ora(state, state->b); break; // ORA B
   case 0xb1: opcode_ora(state, state->c); break; // ORA C
@@ -890,7 +879,7 @@ int emulate_op(state_t *state) {
   case 0xb3: opcode_ora(state, state->e); break; // ORA E
   case 0xb4: opcode_ora(state, state->h); break; // ORA H
   case 0xb5: opcode_ora(state, state->l); break; // ORA L
-  case 0xb6: opcode_ora(state, state->memory[(state->h << 8) | state->l]); break; // ORA M
+  case 0xb6: opcode_ora(state, state->memory[state->hl]); break; // ORA M
   case 0xb7: opcode_ora(state, state->a); break; // ORA A
   case 0xb8: opcode_cmp(state, state->b); break; // CMP B
   case 0xb9: opcode_cmp(state, state->c); break; // CMP C
@@ -898,7 +887,7 @@ int emulate_op(state_t *state) {
   case 0xbb: opcode_cmp(state, state->e); break; // CMP E
   case 0xbc: opcode_cmp(state, state->h); break; // CMP H
   case 0xbd: opcode_cmp(state, state->l); break; // CMP L
-  case 0xbe: opcode_cmp(state, state->memory[(state->h << 8) | state->l]); break; // CMP M
+  case 0xbe: opcode_cmp(state, state->memory[state->hl]); break; // CMP M
   case 0xbf: opcode_cmp(state, state->a); break; // CMP A
   case 0xc0: // RNZ
     // Conditional return
@@ -1025,12 +1014,12 @@ int emulate_op(state_t *state) {
 #ifdef CPUDIAG_CALL5
     if (5 == ((opcode[2] << 8) | opcode[1])) {
       if (state->c == 9) {
-        uint16_t offset = (state->d << 8) | state->e;
-        unsigned char *str = &state->memory[offset + 3]; // skip the prefix bytes
-        //printf("\n");
+        unsigned char *str = &state->memory[state->de + 3]; // skip the prefix bytes
+        //unsigned char *str = &state->memory[state->de];
+        printf("'");
         while (*str != '$')
           printf("%c", *str++);
-        printf("\n");
+        printf("'\n");
       } else if (state->c == 2) {
         printf("printed char: %c\n", state->e);
       }
@@ -1219,7 +1208,7 @@ int emulate_op(state_t *state) {
     }
     break;
   case 0xe9: // PCHL
-    state->pc = (state->h << 8) | state->l;
+    state->pc = state->hl;
     return 0;
     break;
   case 0xea: // JPE addr
@@ -1236,12 +1225,9 @@ int emulate_op(state_t *state) {
        (H) <-> (D)
        (L) <-> (E) */
     {
-      uint8_t save1 = state->d;
-      uint8_t save2 = state->e;
-      state->d = state->h;
-      state->e = state->l;
-      state->h = save1;
-      state->l = save2;
+      uint16_t temp = state->hl;
+      state->hl = state->de;
+      state->de = temp;
     }
     break;
   case 0xec: // CPE addr
@@ -1280,13 +1266,8 @@ int emulate_op(state_t *state) {
     break;
   case 0xf1: // POP PSW
     {
-      uint8_t psw = state->memory[state->sp++];
+      state->psw = state->memory[state->sp++];
       state->a = state->memory[state->sp++];
-      state->cc.z  = (0x01 == (psw & 0x01));
-      state->cc.s  = (0x02 == (psw & 0x02));
-      state->cc.p  = (0x04 == (psw & 0x04));
-      state->cc.cy = (0x05 == (psw & 0x08));
-      state->cc.ac = (0x10 == (psw & 0x10));
     }
     break;
   case 0xf2: // JP addr
@@ -1318,13 +1299,8 @@ int emulate_op(state_t *state) {
   case 0xf5: // PUSH PSW
     // Push processor status word
     {
-      uint8_t psw = (state->cc.z |
-                     state->cc.s << 1 |
-                     state->cc.p << 2 |
-                     state->cc.cy << 3 |
-                     state->cc.ac << 4 );
       state->memory[--state->sp] = state->a;
-      state->memory[--state->sp] = psw;
+      state->memory[--state->sp] = state->psw;
     }
     break;
   case 0xf6: // ORI data
@@ -1346,7 +1322,7 @@ int emulate_op(state_t *state) {
     break;
   case 0xf9: // SPHL
     // (SP) <- (H)(L)
-    state->sp = (state->h << 8) | state->l;
+    state->sp = state->hl;
     break;
   case 0xfa: // JM addr
     // Jump if S == 1

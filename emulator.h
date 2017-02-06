@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 typedef struct {
     uint8_t z:1; /* Zero - If the result of an instruction has the value 0,
@@ -32,19 +33,37 @@ typedef struct {
 } condition_codes_t;
 
 typedef struct  __attribute__((__packed__)) {
-    uint8_t b;
-    uint8_t c;
-    uint8_t d;
-    uint8_t e;
-    uint8_t h;
-    uint8_t l;
-    uint8_t a;
+  union {
+    uint16_t bc;
+    struct {
+      uint8_t c;
+      uint8_t b;
+    };
+  };
+  union {
+    uint16_t de;
+    struct {
+      uint8_t e;
+      uint8_t d;
+    };
+  };
+  union {
+    uint16_t hl;
+    struct {
+      uint8_t l;
+      uint8_t h;
+    };
+  };
+  uint8_t a;
 
-    uint16_t sp;
-    uint16_t pc;
-    uint8_t *memory;
+  uint16_t sp;
+  uint16_t pc;
+  uint8_t *memory;
+  union {
+    uint8_t psw;
     condition_codes_t cc;
-    uint8_t int_enable;
+  };
+  uint8_t int_enable;
 } state_t;
 
 // Emulate op code

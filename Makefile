@@ -6,6 +6,8 @@ all:
 test: all
 	./bin/emul ./tests/cpudiag.bin 0x100
 
+#./bin/emul ./test.com 0x100
+
 clean:
 	rm -rf ./bin
 
