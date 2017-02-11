@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+
 // registers
 typedef struct  __attribute__((__packed__)) {
   // data group
@@ -82,7 +83,8 @@ typedef struct  __attribute__((__packed__)) {
   uint8_t int_enable;
 } state_t;
 
-// Disassemble opcode
-int disassemble_opcode_8086(unsigned char *codebuffer, int pc);
+int emulate_op(state_t *state);
+
+extern int disassemble_opcode_8086(state_t *, int);
 
 #endif /* emulator_h */

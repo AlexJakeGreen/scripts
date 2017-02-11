@@ -30,9 +30,11 @@ int main(int argc, const char * argv[]) {
   
   read_rom_file(state, argv[1], 0x0);
 
-  while (state->ip < 450) {
-    state->ip += disassemble_opcode_8086(state->memory, state->ip);
+  int done = 0;
+  
+  while (0 == done) {
+    done = emulate_op(state);
   }
-    
+
   return 0;
 }
