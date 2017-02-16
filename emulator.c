@@ -284,7 +284,9 @@ void opcode2b(state_t *state, void (*func)(state_t *, uint8_t *, uint8_t *) ) {
 
 
 void opcode2_ev_iv(state_t *state, void (*func)(state_t *, uint16_t *, uint16_t *) ) {
-  uint16_t *ev, *gv;
+  uint16_t *ev = NULL;
+  uint16_t iv = 0;
+  
   uint8_t *opcode = &state->memory[state->ip];
   
   uint8_t mod = (opcode[1] & 0b11000000) >> 6;
@@ -298,8 +300,8 @@ void opcode2_ev_iv(state_t *state, void (*func)(state_t *, uint16_t *, uint16_t 
   switch(mod) {
   case 0: // 00 Use R/M Table 1 for R/M operand
     if (rm == 6) {
-      ev = (uint16_t *)&state->memory[(opcode[3] << 8) | opcode[2]];
-      gv = (uint16_t *)&state->memory[(opcode[5] << 8) | opcode[4]];
+      ev = (uint16_t *)(&state->memory[(opcode[3] << 8) | opcode[2]]);
+      iv = (opcode[5] << 8) | opcode[4];
       state->ip += 2;
     } else {
       unimplemented_instruction(state);
@@ -315,16 +317,17 @@ void opcode2_ev_iv(state_t *state, void (*func)(state_t *, uint16_t *, uint16_t 
   case 3: // 11 Two register instruction; use REG table   
     {
       ev = reg_table16[rm];
-      gv = (uint16_t *)&state->memory[(opcode[3] << 8) | opcode[2]];
+      iv = (opcode[3] << 8) | opcode[2];
     }
-    func(state, ev, gv);
-    // TODO: af, cf, of, pf, sf, zf
     break;
 
   default:
     unimplemented_instruction(state);
     break;
   }
+  func(state, ev, &iv);
+  // TODO: af, cf, of, pf, sf, zf
+
   state->ip += 3;
 }
 
@@ -359,14 +362,14 @@ void opcode2_grp1_ev_ib(state_t *state) {
   }
 
   switch(reg) { // GRP1: add or adc sbb and sub xor cmp
-  case 0: *ev += ib; break;
+  case 0: opcode_add16(state, ev, &ib); break;
   case 1: unimplemented_instruction(state); break;
   case 2: opcode_adc16(state, ev, &ib); break;
   case 3: opcode_sbb16(state, ev, &ib); break;
   case 4: opcode_and16(state, ev, &ib); break;
   case 5: opcode_sub16(state, ev, &ib); break;
   case 6: unimplemented_instruction(state); break;
-  case 7: state->flag.z = (0 == (*ev - ib)); break;
+  case 7: opcode_cmp16(state, ev, &ib); break;
 
   default:
     break;
@@ -581,7 +584,7 @@ void grp5_push(state_t *state, uint16_t *arg) { unimplemented_instruction(state)
 int emulate_op(state_t *state) {
   unsigned char *opcode = &state->memory[state->ip];
 
-  print_state(state);
+  //print_state(state);
   disassemble_opcode_8086(state, state->ip);
 
   switch(*opcode) {
@@ -696,6 +699,7 @@ int emulate_op(state_t *state) {
   case 0x74: if(state->flag.z == 1) { state->ip += (int8_t)opcode[1]; }; state->ip += 1; break; // JZ Jb
   case 0x75: if(state->flag.z == 0) { state->ip += (int8_t)opcode[1]; }; state->ip += 1; break; // JNZ Jb
   case 0x76: if(state->flag.c == 1 || state->flag.z == 1) { state->ip += (int8_t)opcode[1]; }; state->ip += 1; break; // JBE Jb
+  case 0x77: if(state->flag.c == 0 || state->flag.z == 0) { state->ip += (int8_t)opcode[1]; }; state->ip += 1; break; // JA Jb
   case 0x79: if(state->flag.s == 0) { state->ip += (int8_t)opcode[1]; }; state->ip += 1; break; // JNO Jb
     
   case 0x80: opcode2_grp1_eb_ib(state); break; // GRP1 Eb, Ib
@@ -712,6 +716,14 @@ int emulate_op(state_t *state) {
   case 0x8e: opcode2_mov_sw_ew(state); break; // MOV Sw, Ev
 
   case 0x90: break; // NOP
+
+  /* case 0x92: // XCHG DX, AX */
+  /*   { */
+  /*     uint16_t tmp = state->dx; */
+  /*     state->dx = state->ax; */
+  /*     state->ax = tmp; */
+  /*   } */
+  /*   break; */
     
   case 0x9c: state->sp = state->sp - 2; *((uint16_t *)(&state->memory[state->sp])) = state->flags; break; // PUSHF
   case 0x9d: state->flags = *((uint16_t *)(&state->memory[state->sp])); state->sp += 2; break; // POPF
@@ -767,7 +779,7 @@ int emulate_op(state_t *state) {
     state->ip = state->ip + (int16_t)((opcode[2] << 8) | opcode[1]) + 2;
     break;
     
-  case 0xeb: state->ip += (1 + opcode[1]); break; // JMP Jb - jump relative
+  case 0xeb: state->ip += (1 + (int8_t)opcode[1]); break; // JMP Jb - jump relative
     
   case 0xf4: print_state(state); /* print_memory(state); */ exit(EXIT_SUCCESS); break; // HLT
     
@@ -801,9 +813,11 @@ int emulate_op(state_t *state) {
         switch(reg) {
         case 0: // INC
           *eb += 1;
+          set_zsp8(state, *eb);
           break;
         case 1: // DEC
           *eb -= 1;
+          set_zsp8(state, *eb);
           break;
 
         default:

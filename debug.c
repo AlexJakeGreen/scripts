@@ -2,7 +2,7 @@
 #include "debug.h"
 
 void print_state(state_t *state) {
-  printf("\t AX:0x%04x BX:0x%04x CX:0x%04x DX:0x%04x\n", state->ax, state->bx, state->cx, state->dx);
+  printf("\t AX:0x%04x BX:0x%04x CX:0x%04x DX:0x%04x  cursor: %04x\n", state->ax, state->bx, state->cx, state->dx, *(uint16_t *)(&state->memory[0x01d3]));
   printf("\t SP:0x%04x BP:0x%04x SI:0x%04x DI:0x%04x\n", state->sp, state->bp, state->si, state->di);
   printf("\t CS:0x%04x DS:0x%04x SS:0x%04x ES:0x%04x\n", state->cs, state->ds, state->ss, state->es);
 
