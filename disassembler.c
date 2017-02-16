@@ -208,7 +208,7 @@ int disassemble_opcode_8086(state_t *state, int ip) {
     break;
     
   case 0x80: // GRP1 Eb, Ib
-  case 0x82: // GRP Eb, Ib
+  case 0x82:
     {
       uint8_t mod = (code[1] & 0b11000000) >> 6;
       uint8_t reg = (code[1] & 0b00111000) >> 3;
@@ -227,7 +227,7 @@ int disassemble_opcode_8086(state_t *state, int ip) {
         unimplemented_instruction(state);
       } else if (mod == 0b10) {
         // 10 Use R/M Table 2 with 16-bit displacement
-        printf("%s %s, %02x", grp_table[1][reg], rm_table[mod][rm], code[2]);
+        printf("%s [%s +%04x], %02x", grp_table[1][reg], rm_table[1][rm], (code[3] << 8) | code[2], code[4]);
       } else if (mod == 0b11) {
         // 11 Two register instruction; use REG table   
         printf("%s %s, %02x", grp_table[1][reg], reg_table[w][rm], code[2]);
@@ -235,7 +235,6 @@ int disassemble_opcode_8086(state_t *state, int ip) {
         // should never be reached
         unimplemented_instruction(state);
       }
-      opbytes += 2;
     }
     //unimplemented_instruction(*code);
     break;

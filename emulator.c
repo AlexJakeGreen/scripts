@@ -39,15 +39,15 @@ void opcode_add8(__attribute__((__unused__)) state_t *state, uint8_t *arg1, uint
 // SUB word, word
 void opcode_sub16(state_t *state, uint16_t *arg1, uint16_t *arg2) {
   uint32_t res = *arg1 - *arg2;
+  state->flag.c = (*arg1 < *arg2);
   *arg1 = (uint16_t)res;
   set_zsp16(state, *arg1);
-  state->flag.c = (res > 0xffff);
 }
 void opcode_sub8(__attribute__((__unused__)) state_t *state, uint8_t *arg1, uint8_t *arg2) {
   uint16_t res = *arg1 - *arg2;
+  state->flag.c = (*arg1 < *arg2);
   *arg1 = (uint8_t)res;
   set_zsp16(state, *arg1);
-  state->flag.c = (res > 0xff);
 }
 
 void opcode_mov16(__attribute__((__unused__)) state_t *state, uint16_t *arg1, uint16_t *arg2) {
@@ -342,6 +342,27 @@ void opcode2_grp1_ev_ib(state_t *state) {
   uint16_t ib = (uint16_t)(int8_t)opcode[2];
 
   uint16_t *reg_table16[] = {&state->ax, &state->cx, &state->dx, &state->bx, &state->sp, &state->bp, &state->si, &state->di};
+  /*
+  uint16_t rm_table1[8] = {
+    state->bx + state->si, // BX+SI
+    state->bx + state->di, // BX+DI
+    state->bp + state->si, // BP+SI
+    state->bp + state->di, // BP+DI
+    state->si, // SI
+    state->di, // DI
+    (opcode[3] << 8) | opcode[2], // Direct address
+    state->bx };
+  uint16_t rm_table2[8] = {
+    state->bx + state->si, // BX+SI
+    state->bx + state->di, // BX+DI
+    state->bp + state->si, // BP+SI
+    state->bp + state->di, // BP+DI
+    state->si, // SI
+    state->di, // DI
+    state->bp, // BP
+    state->bx //BX
+  };
+  */
   
   if (mod == 0b00) { // 00 Use R/M Table 1 for R/M operand
     if (rm == 6) {
@@ -354,6 +375,7 @@ void opcode2_grp1_ev_ib(state_t *state) {
   } else if (mod == 0b01) { // 01 Use R/M Table 2 with 8-bit displacement
     unimplemented_instruction(state);
   } else if (mod == 0b10) { // 10 Use R/M Table 2 with 16-bit displacement
+    // eb = &state->memory[ rm_table1[rm] + ((opcode[3] << 8) | opcode[2])]; // FIXME
     unimplemented_instruction(state);
   } else if (mod == 0b11) { // 11 Two register instruction; use REG table
     ev = reg_table16[rm];
@@ -363,12 +385,12 @@ void opcode2_grp1_ev_ib(state_t *state) {
 
   switch(reg) { // GRP1: add or adc sbb and sub xor cmp
   case 0: opcode_add16(state, ev, &ib); break;
-  case 1: unimplemented_instruction(state); break;
+  case 1: opcode_or16(state, ev, &ib); break;
   case 2: opcode_adc16(state, ev, &ib); break;
   case 3: opcode_sbb16(state, ev, &ib); break;
   case 4: opcode_and16(state, ev, &ib); break;
   case 5: opcode_sub16(state, ev, &ib); break;
-  case 6: unimplemented_instruction(state); break;
+  case 6: printf("case5\n");unimplemented_instruction(state); break;
   case 7: opcode_cmp16(state, ev, &ib); break;
 
   default:
@@ -436,6 +458,25 @@ void opcode2_grp1_eb_ib(state_t *state) {
   uint8_t ib = opcode[2];
 
   uint8_t *reg_table8[] = {&state->al, &state->cl, &state->dl, &state->bl, &state->ah, &state->ch, &state->dh, &state->bh};
+  /*  uint16_t rm_table1[8] = {
+    state->bx + state->si, // BX+SI
+    state->bx + state->di, // BX+DI
+    state->bp + state->si, // BP+SI
+    state->bp + state->di, // BP+DI
+    state->si, // SI
+    state->di, // DI
+    (opcode[3] << 8) | opcode[2], // Direct address
+    state->bx }; */
+  uint16_t rm_table2[8] = {
+    state->bx + state->si, // BX+SI
+    state->bx + state->di, // BX+DI
+    state->bp + state->si, // BP+SI
+    state->bp + state->di, // BP+DI
+    state->si, // SI
+    state->di, // DI
+    state->bp, // BP
+    state->bx //BX
+  };
 
   if (mod == 0b00) { // 00 Use R/M Table 1 for R/M operand
     if (rm == 6) {
@@ -448,7 +489,10 @@ void opcode2_grp1_eb_ib(state_t *state) {
   } else if (mod == 0b01) { // 01 Use R/M Table 2 with 8-bit displacement
     unimplemented_instruction(state);
   } else if (mod == 0b10) { // 10 Use R/M Table 2 with 16-bit displacement
-    unimplemented_instruction(state);
+    uint16_t addr = rm_table2[rm] + ((opcode[3] << 8) | opcode[2]); // signed?
+    eb = &state->memory[addr];
+    ib = opcode[4];
+    state->ip += 2;
   } else if (mod == 0b11) { // 11 Two register instruction; use REG table
     eb = reg_table8[rm];
   } else { // should never be reached
@@ -457,7 +501,7 @@ void opcode2_grp1_eb_ib(state_t *state) {
 
   switch(reg) { // GRP1: add or adc sbb and sub xor cmp
   case 0: *eb += ib; break;
-  case 1: unimplemented_instruction(state); break;
+  case 1: opcode_or8(state, eb, &ib); break;
   case 2: unimplemented_instruction(state); break;
   case 3: unimplemented_instruction(state); break;
   case 4: unimplemented_instruction(state); break;
@@ -699,7 +743,7 @@ int emulate_op(state_t *state) {
   case 0x74: if(state->flag.z == 1) { state->ip += (int8_t)opcode[1]; }; state->ip += 1; break; // JZ Jb
   case 0x75: if(state->flag.z == 0) { state->ip += (int8_t)opcode[1]; }; state->ip += 1; break; // JNZ Jb
   case 0x76: if(state->flag.c == 1 || state->flag.z == 1) { state->ip += (int8_t)opcode[1]; }; state->ip += 1; break; // JBE Jb
-  case 0x77: if(state->flag.c == 0 || state->flag.z == 0) { state->ip += (int8_t)opcode[1]; }; state->ip += 1; break; // JA Jb
+  case 0x77: if(state->flag.c == 0 ) { state->ip += (int8_t)opcode[1]; }; state->ip += 1; break; // JA Jb
   case 0x79: if(state->flag.s == 0) { state->ip += (int8_t)opcode[1]; }; state->ip += 1; break; // JNO Jb
     
   case 0x80: opcode2_grp1_eb_ib(state); break; // GRP1 Eb, Ib
@@ -717,13 +761,9 @@ int emulate_op(state_t *state) {
 
   case 0x90: break; // NOP
 
-  /* case 0x92: // XCHG DX, AX */
-  /*   { */
-  /*     uint16_t tmp = state->dx; */
-  /*     state->dx = state->ax; */
-  /*     state->ax = tmp; */
-  /*   } */
-  /*   break; */
+  case 0x92: // XCHG DX, AX
+    opcode_xchg16(state, &state->dx, &state->ax);
+    break;
     
   case 0x9c: state->sp = state->sp - 2; *((uint16_t *)(&state->memory[state->sp])) = state->flags; break; // PUSHF
   case 0x9d: state->flags = *((uint16_t *)(&state->memory[state->sp])); state->sp += 2; break; // POPF
@@ -781,7 +821,7 @@ int emulate_op(state_t *state) {
     
   case 0xeb: state->ip += (1 + (int8_t)opcode[1]); break; // JMP Jb - jump relative
     
-  case 0xf4: print_state(state); /* print_memory(state); */ exit(EXIT_SUCCESS); break; // HLT
+  case 0xf4: print_state(state); print_memory(state); exit(EXIT_SUCCESS); break; // HLT
     
   case 0xf5: state->flag.c = !state->flag.c; break; // CMC
     
