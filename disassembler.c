@@ -465,7 +465,7 @@ int disassemble_opcode_8086(state_t *state, int ip) {
   case 0xe9: printf("JMP Jv"); break;
   case 0xea: printf("JMP Ap"); break;
     
-  case 0xeb: printf("JMP %04x", state->ip + code[1] + 1); break; // JMP Jb
+  case 0xeb: printf("JMP %04x", state->ip + (int8_t)code[1] + 1); break; // JMP Jb
     
     
   case 0xf4: printf("HLT"); break; // HLT

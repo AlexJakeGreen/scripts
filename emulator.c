@@ -628,7 +628,7 @@ void grp5_push(state_t *state, uint16_t *arg) { unimplemented_instruction(state)
 int emulate_op(state_t *state) {
   unsigned char *opcode = &state->memory[state->ip];
 
-  //print_state(state);
+  print_state(state);
   disassemble_opcode_8086(state, state->ip);
 
   switch(*opcode) {
@@ -639,7 +639,7 @@ int emulate_op(state_t *state) {
   case 0x01: // ADD Ev, Gv
   case 0x03: opcode2v(state, &opcode_add16); break; // ADD Gv, Ev
     
-  case 0x04: state->al = opcode[1]; state->ip += 1; break; // ADD AL, Ib
+  case 0x04: opcode_add8(state, &state->al, &opcode[1]); state->ip += 1; break; // ADD AL, Ib
   case 0x05: // ADD AX, Iv
     {
       state->ax += ((opcode[2] << 8) | opcode[1]); // FIXME: use opcode_add16 instead
