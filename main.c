@@ -23,6 +23,7 @@ int main(int argc, const char * argv[]) {
   state_t *state = calloc(1, sizeof(state_t));
   state->memory = calloc(1, RAM_SIZE);
   state->ip = 0x0000;
+  state->sp = 0x0100;
   state->cs = 0xffff;
   state->ds = 0x0000;
   state->ss = 0x0000;

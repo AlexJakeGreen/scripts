@@ -4,7 +4,7 @@ all:
 #	${CC} dis.c emulator.c utils.c -o ./bin/disasm -Wall
 
 test: all
-	./bin/emul ./data/80186/add.bin
+	./bin/emul ./data/codegolf
 
 clean:
 	rm -rf ./bin

@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-
 // registers
 typedef struct  __attribute__((__packed__)) {
   // data group
@@ -45,13 +44,13 @@ typedef struct  __attribute__((__packed__)) {
       uint8_t dh;
     };
   };
-
+  
   // pointer and index group
   uint16_t sp; // stack pointer
   uint16_t bp; // base pointer
   uint16_t si; // source index
   uint16_t di; // destination index
-
+  
   // segment registers
   uint16_t cs; // code segment - current code segment
   uint16_t ds; // data segment - current stack segment
@@ -59,24 +58,25 @@ typedef struct  __attribute__((__packed__)) {
   uint16_t es; // extra segment - current extra segment (storage)
   
   uint16_t ip; // instruction pointer, analogous to PC in 8080
-
-  struct {
-    // status flags
-    uint8_t cf :1; // carry
-    uint8_t pf :1; // parity
-    uint8_t af :1; // aux carry
-    uint8_t zf :1; // zero
-    uint8_t sf :1; // sign
-    uint8_t of :1; // overflow
-    
-    // control flags
-    uint8_t _if :1; // interrupt-enable
-    uint8_t df :1; // direction
-    uint8_t tf :1; // trap
-
-    uint8_t pad :7; // padding
-  } flags;
-
+  
+  union {
+    uint16_t flags;
+    struct {
+      uint8_t     c: 1; // carry
+      uint8_t    u1: 1;
+      uint8_t     p: 1; // parity
+      uint8_t    u2: 1;
+      uint8_t     a: 1; // aux carry
+      uint8_t    u3: 1;
+      uint8_t     z: 1; // zero
+      uint8_t     s: 1; // sign
+      uint8_t     t: 1; // trap flag
+      uint8_t     i: 1; // interrupt-enable
+      uint8_t     d: 1; // direction
+      uint8_t     o: 1; // trap
+      uint8_t    u4: 4; // padding
+    } flag;
+  };
   
   uint8_t *memory;
 

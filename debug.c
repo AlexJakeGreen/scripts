@@ -2,12 +2,15 @@
 #include "debug.h"
 
 void print_state(state_t *state) {
-  printf("\t==AX:0x%04x BX:0x%04x CX:0x%04x DX:0x%04x\n", state->ax, state->bx, state->cx, state->dx);
-  printf("\t==IP:0x%04x SP:0x%04x BP:0x%04x SI:0x%04x DI:0x%04x\n", state->ip, state->sp, state->bp, state->si, state->di);
-  /* printf("\t==CS:0x%04x DS:0x%04x SS:0x%04x ES:0x%04x\n", state->cs, state->ds, state->ss, state->es); */
-  /* printf("\t==cf:%01x pf:%01x af:%01x zf:%01x sf:%01x of:%01x\n", */
-  /*        state->flags.cf, state->flags.pf, state->flags.af, state->flags.zf, state->flags.sf, state->flags.of); */
-  /* printf("\t==if:%01x df:%01x tf:%01x\n", state->flags._if, state->flags.df, state->flags.tf); */
+  printf("\t AX:0x%04x BX:0x%04x CX:0x%04x DX:0x%04x\n", state->ax, state->bx, state->cx, state->dx);
+  printf("\t SP:0x%04x BP:0x%04x SI:0x%04x DI:0x%04x\n", state->sp, state->bp, state->si, state->di);
+  printf("\t CS:0x%04x DS:0x%04x SS:0x%04x ES:0x%04x\n", state->cs, state->ds, state->ss, state->es);
+
+  // printf("\t IP: %04x\n", state->ip);
+
+  printf("\tFLAGS: ____odit sz_a_p_c\n");
+  printf("\tFLAGS: ____%x%x%x%x %x%x_%x_%x_%x %04x\n", state->flag.o, state->flag.d, state->flag.i,
+         state->flag.t, state->flag.s, state->flag.z, state->flag.a, state->flag.p, state->flag.c, state->flags);
 }
 
 void print_memory(state_t *state) {
