@@ -30,7 +30,10 @@ void opcode_add16(state_t *state, uint16_t *arg1, uint16_t *arg2) {
   state->flag.c = (res > 0xffff);
 }
 void opcode_add8(__attribute__((__unused__)) state_t *state, uint8_t *arg1, uint8_t *arg2) {
-  *(uint8_t *)arg1 += *arg2;
+  uint16_t res = *arg1 + *arg2;
+  *arg1 = (uint8_t)res;
+  set_zsp8(state, *arg1);
+  state->flag.c = (res > 0xff);
 }
 
 // ADD word, word
@@ -110,7 +113,6 @@ void opcode_sbb16(state_t *state, uint16_t *arg1, uint16_t *arg2) {
 void opcode_sbb8(__attribute__((__unused__)) state_t *state, uint8_t *arg1, uint8_t *arg2) {
   *arg1 &= *arg2;
 }
-
 
 void opcode_cmp16(state_t *state, uint16_t *arg1, uint16_t *arg2) {
   uint32_t res = *arg1 - *arg2;
@@ -576,6 +578,9 @@ int emulate_op(state_t *state) {
 
   switch(*opcode) {
 
+  case 0x00:
+  case 0x02: opcode2b(state, &opcode_add8); break; // ADD Gb, Ev
+
   case 0x01: // ADD Ev, Gv
   case 0x03: opcode2v(state, &opcode_add16); break; // ADD Gv, Ev
     
@@ -788,6 +793,7 @@ int emulate_op(state_t *state) {
         switch(reg) {
         case 0: // INC
           *eb += 1;
+          break;
         case 1: // DEC
           *eb -= 1;
           break;
@@ -799,6 +805,7 @@ int emulate_op(state_t *state) {
       } else {
         // should never be reached
       }
+
       state->ip += 1;
     }
     break;

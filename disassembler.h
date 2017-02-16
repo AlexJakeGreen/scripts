@@ -2,6 +2,7 @@
 #ifndef disassembler_h
 #define disassembler_h
 
+#include <inttypes.h>
 #include "emulator.h"
 #include "debug.h"
 #include "utils.h"

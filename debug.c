@@ -14,8 +14,9 @@ void print_state(state_t *state) {
 }
 
 void print_memory(state_t *state) {
+  int i;
   printf("\nRAM dump\n");
-  for(int i = 0; i < state->ip; i++) {
+  for(i = 0; i < state->ip; i++) {
     printf("%02x ", state->memory[i]);
     if ((i & 0x0f) == 0x0f)
       printf("\n");
