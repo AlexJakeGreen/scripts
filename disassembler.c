@@ -35,7 +35,7 @@ void print_e(state_t *state) {
   } else if (mod == 0b01) { // 01 Use R/M Table 2 with 8-bit displacement
     printf("[%s+%02x]", rm_table[mod][rm], code[2]);
   } else if (mod == 0b10) { // 10 Use R/M Table 2 with 16-bit displacement
-    printf("[%s+%04x]", rm_table[mod][rm], (code[3] << 8) | code[2]);
+    printf("[%s+%04x]", rm_table[1][rm], (code[3] << 8) | code[2]);
   } else if (mod == 0b11) { // 11 Two register instruction; use REG table   
     printf("%s", reg_table[w][rm]);
   } else { // should never be reached

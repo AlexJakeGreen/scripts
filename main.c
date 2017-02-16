@@ -32,8 +32,9 @@ int main(int argc, const char * argv[]) {
   read_rom_file(state, argv[1], 0x0);
 
   int done = 0;
-  
+  int step = 0;
   while (0 == done) {
+    printf("%d ", step++);
     done = emulate_op(state);
   }
 

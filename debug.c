@@ -14,12 +14,18 @@ void print_state(state_t *state) {
 }
 
 void print_memory(state_t *state) {
-  int i;
+  int x, y;
+  int video_ram = 0x8000;
   printf("\nRAM dump\n");
-  for(i = 0; i < state->ip; i++) {
-    printf("%02x ", state->memory[i]);
-    if ((i & 0x0f) == 0x0f)
-      printf("\n");
+  for(y = 0; y < 25; y++) {
+    for(x = 0; x < 80; x++) {
+      if(state->memory[video_ram + x + y * 80] == 0) {
+        printf(" ");
+      } else {
+        printf("%c", (char)state->memory[video_ram + x + y * 80]);
+      }
+    }
+    printf("\n");
   }
   printf("\n");
 }
@@ -29,7 +35,7 @@ void unimplemented_instruction(state_t *state) {
   printf("\nError: Unimplemented instruction: %02x\n", opcode);
   printf("--------------------------------------\n");
   print_state(state);
-  // print_memory(state);
+  print_memory(state);
   // disassemble_opcode_8086(state, state->ip);
   exit(EXIT_FAILURE);
 }

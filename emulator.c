@@ -36,7 +36,7 @@ void opcode_add8(__attribute__((__unused__)) state_t *state, uint8_t *arg1, uint
   state->flag.c = (res > 0xff);
 }
 
-// ADD word, word
+// SUB word, word
 void opcode_sub16(state_t *state, uint16_t *arg1, uint16_t *arg2) {
   uint32_t res = *arg1 - *arg2;
   *arg1 = (uint16_t)res;
@@ -44,7 +44,10 @@ void opcode_sub16(state_t *state, uint16_t *arg1, uint16_t *arg2) {
   state->flag.c = (res > 0xffff);
 }
 void opcode_sub8(__attribute__((__unused__)) state_t *state, uint8_t *arg1, uint8_t *arg2) {
-  // *(uint8_t *)arg1 += *arg2;
+  uint16_t res = *arg1 - *arg2;
+  *arg1 = (uint8_t)res;
+  set_zsp16(state, *arg1);
+  state->flag.c = (res > 0xff);
 }
 
 void opcode_mov16(__attribute__((__unused__)) state_t *state, uint16_t *arg1, uint16_t *arg2) {
@@ -111,7 +114,11 @@ void opcode_sbb16(state_t *state, uint16_t *arg1, uint16_t *arg2) {
   state->flag.c = (res > 0xffff);
 }
 void opcode_sbb8(__attribute__((__unused__)) state_t *state, uint8_t *arg1, uint8_t *arg2) {
-  *arg1 &= *arg2;
+  uint8_t res = *arg1 - *arg2 - state->flag.c;
+  *arg1 = res;
+  set_zsp8(state, *arg1);
+  state->flag.c = (res > 0xff);
+
 }
 
 void opcode_cmp16(state_t *state, uint16_t *arg1, uint16_t *arg2) {
@@ -574,6 +581,7 @@ void grp5_push(state_t *state, uint16_t *arg) { unimplemented_instruction(state)
 int emulate_op(state_t *state) {
   unsigned char *opcode = &state->memory[state->ip];
 
+  print_state(state);
   disassemble_opcode_8086(state, state->ip);
 
   switch(*opcode) {
@@ -646,23 +654,23 @@ int emulate_op(state_t *state) {
     state->ip += 1;
     break;
     
-  case 0x40: state->ax++; break; //INC AX
-  case 0x41: state->cx++; break;
-  case 0x42: state->dx++; break;
-  case 0x43: state->bx++; break;
-  case 0x44: state->sp++; break;
-  case 0x45: state->bp++; break;
-  case 0x46: state->si++; break;
-  case 0x47: state->di++; break;
+  case 0x40: state->ax++; set_zsp16(state, state->ax); break; //INC AX
+  case 0x41: state->cx++; set_zsp16(state, state->cx); break;
+  case 0x42: state->dx++; set_zsp16(state, state->dx); break;
+  case 0x43: state->bx++; set_zsp16(state, state->bx); break;
+  case 0x44: state->sp++; set_zsp16(state, state->sp); break;
+  case 0x45: state->bp++; set_zsp16(state, state->bp); break;
+  case 0x46: state->si++; set_zsp16(state, state->si); break;
+  case 0x47: state->di++; set_zsp16(state, state->di); break;
     
-  case 0x48: state->ax--; break;
-  case 0x49: state->cx--; break;
-  case 0x4a: state->dx--; break;
-  case 0x4b: state->bx--; break;
-  case 0x4c: state->sp--; break;
-  case 0x4d: state->bp--; break;
-  case 0x4e: state->si--; break;
-  case 0x4f: state->di--; break;
+  case 0x48: state->ax--; set_zsp16(state, state->ax); break; // DEC AX
+  case 0x49: state->cx--; set_zsp16(state, state->cx); break;
+  case 0x4a: state->dx--; set_zsp16(state, state->dx); break;
+  case 0x4b: state->bx--; set_zsp16(state, state->bx); break;
+  case 0x4c: state->sp--; set_zsp16(state, state->sp); break;
+  case 0x4d: state->bp--; set_zsp16(state, state->bp); break;
+  case 0x4e: state->si--; set_zsp16(state, state->si); break;
+  case 0x4f: state->di--; set_zsp16(state, state->di); break;
 
     
   case 0x50: state->sp -= 2; *((uint16_t *)(&state->memory[state->sp])) = state->ax; break; // PUSH AX
@@ -701,7 +709,7 @@ int emulate_op(state_t *state) {
   case 0x89: // MOV Ev, Gv
   case 0x8b: opcode2v(state, &opcode_mov16); break; // MOV Gv, Ev
     
-  case 0x8e: opcode2_mov_sw_ew(state); break; // M1````OV Sw, Ev
+  case 0x8e: opcode2_mov_sw_ew(state); break; // MOV Sw, Ev
 
   case 0x90: break; // NOP
     
