@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include "disassembler.h"
 
+#define READ16(pos) *(uint16_t *)(code + pos)
+
 // opcode extensions
 const char *grp_table[6][8] = {
   {}, // padding
@@ -35,14 +37,14 @@ void print_eg(state_t *state, const char *mnemonic) {
 
   if (mod == 0b00) { // 00 Use R/M Table 1 for R/M operand
     if (rm == 6) {
-      sprintf(arg1, "[%04x]", (code[3] << 8) | code[2]);
+      sprintf(arg1, "[%04x]", READ16(2));
     } else {
       sprintf(arg1, "%s", rm_table[mod][rm]);
     }
   } else if (mod == 0b01) { // 01 Use R/M Table 2 with 8-bit displacement
     sprintf(arg1, "[%s+%02x]", rm_table[mod][rm], code[2]);
   } else if (mod == 0b10) { // 10 Use R/M Table 2 with 16-bit displacement
-    sprintf(arg1, "[%s+%04x]", rm_table[1][rm], (code[3] << 8) | code[2]);
+    sprintf(arg1, "[%s+%04x]", rm_table[1][rm], READ16(2));
   } else if (mod == 0b11) { // 11 Two register instruction; use REG table   
     sprintf(arg1, "%s", reg_table[w][rm]);
   } else { // should never be reached
@@ -67,8 +69,8 @@ void disassemble_opcode_8086(state_t *state, int ip) {
 
   case 0x00 ... 0x03: print_eg(state, "ADD"); break;
 
-  case 0x04: printf("ADD AL, %02x", code[1]); break; // ADD AL, Ib
-  case 0x05: printf("ADD AX, %04x", (code[2] << 8) | code[1]); break; // ADD AX, Iv
+  case 0x04: printf("ADD AL, %02x", code[1]); break;
+  case 0x05: printf("ADD AX, %04x", READ16(1)); break;
 
   case 0x06: printf("PUSH ES"); break;
   case 0x07: printf("POP ES"); break;
@@ -78,7 +80,7 @@ void disassemble_opcode_8086(state_t *state, int ip) {
   case 0x10 ... 0x13: print_eg(state, "ADC"); break;
 
   case 0x14: printf("ADC AL, %02x", code[1]); break; // ADC AL, Ib
-  case 0x15: printf("ADC AX, %04x", (code[2] << 8) | code[1]); break; // ADC AX, Iv
+  case 0x15: printf("ADC AX, %04x", READ16(1)); break; // ADC AX, Iv
 
   case 0x16: printf("PUSH SS"); break;
   case 0x17: printf("POP SS"); break;
@@ -88,7 +90,7 @@ void disassemble_opcode_8086(state_t *state, int ip) {
   case 0x20 ... 0x23: print_eg(state, "AND"); break;
 
   case 0x24: printf("AND AL, %02x", code[1]); break; // ADC AL, Ib
-  case 0x25: printf("AND AX, %04x", (code[2] << 8) | code[1]); break; // ADC AX, Iv
+  case 0x25: printf("AND AX, %04x", READ16(1)); break; // ADC AX, Iv
 
   case 0x26: printf("ES:"); break;
   case 0x27: printf("DAA"); break;
@@ -98,7 +100,7 @@ void disassemble_opcode_8086(state_t *state, int ip) {
   case 0x30 ... 0x33: print_eg(state, "XOR"); break;
 
   case 0x34: printf("XOR AL, %02x", code[1]); break; // ADC AL, Ib
-  case 0x35: printf("XOR AX, %04x", (code[2] << 8) | code[1]); break; // ADC AX, Iv
+  case 0x35: printf("XOR AX, %04x", READ16(1)); break; // ADC AX, Iv
   case 0x36: printf("SS:"); break;
   case 0x37: printf("AAA"); break;
 
@@ -127,17 +129,16 @@ void disassemble_opcode_8086(state_t *state, int ip) {
       if (mod == 0b00) {
         // 00 Use R/M Table 1 for R/M operand
         if (rm == 6) {
-          printf("%s [%04x], %02x", grp_table[1][reg], (code[3] << 8) | code[2], code[4]);
+          printf("%s [%04x], %02x", grp_table[1][reg], READ16(2), code[4]);
         } else {
           printf("%s %s, %02x", grp_table[1][reg], rm_table[mod][rm], code[2]);
         }
       } else if (mod == 0b01) {
         // 01 Use R/M Table 2 with 8-bit displacement
-        //printf("ADD %s, %s", rm_table[mod][rm], reg_table[w][reg]);
         unimplemented_instruction(state);
       } else if (mod == 0b10) {
         // 10 Use R/M Table 2 with 16-bit displacement
-        printf("%s [%s +%04x], %02x", grp_table[1][reg], rm_table[1][rm], (code[3] << 8) | code[2], code[4]);
+        printf("%s [%s +%04x], %02x", grp_table[1][reg], rm_table[1][rm], READ16(2), code[4]);
       } else if (mod == 0b11) {
         // 11 Two register instruction; use REG table   
         printf("%s %s, %02x", grp_table[1][reg], reg_table[w][rm], code[2]);
@@ -146,9 +147,7 @@ void disassemble_opcode_8086(state_t *state, int ip) {
         unimplemented_instruction(state);
       }
     }
-    //unimplemented_instruction(*code);
     break;
-
 
   case 0x81: //GRP1 Ev, Iv
     {
@@ -158,9 +157,9 @@ void disassemble_opcode_8086(state_t *state, int ip) {
       if (mod == 0b00) {
         // 00 Use R/M Table 1 for R/M operand
         if (rm == 6) {
-          printf("%s [%04x], %04x", grp_table[1][reg], (code[3] << 8) | code[2], (code[5] << 8) | code[4]);
+          printf("%s [%04x], %04x", grp_table[1][reg], READ16(2), (code[5] << 8) | code[4]);
         } else {
-          printf("%s %s, %04x", grp_table[1][reg], rm_table[mod][rm], (code[3] << 8) | code[2]);
+          printf("%s %s, %04x", grp_table[1][reg], rm_table[mod][rm], READ16(2));
         }
       } else if (mod == 0b01) {
         // 01 Use R/M Table 2 with 8-bit displacement
@@ -168,10 +167,10 @@ void disassemble_opcode_8086(state_t *state, int ip) {
         unimplemented_instruction(state);
       } else if (mod == 0b10) {
         // 10 Use R/M Table 2 with 16-bit displacement
-        printf("%s %s, %04x", grp_table[1][reg], rm_table[mod][rm], (code[3] << 8) | code[2]);
+        printf("%s %s, %04x", grp_table[1][reg], rm_table[mod][rm], READ16(2));
       } else if (mod == 0b11) {
         // 11 Two register instruction; use REG table   
-        printf("%s %s, %04x", grp_table[1][reg], reg_table[w][rm], (code[3] << 8) | code[2]);
+        printf("%s %s, %04x", grp_table[1][reg], reg_table[w][rm], READ16(2));
       } else {
         // should never be reached
         unimplemented_instruction(state);
@@ -187,17 +186,15 @@ void disassemble_opcode_8086(state_t *state, int ip) {
       if (mod == 0b00) {
         // 00 Use R/M Table 1 for R/M operand
         if (rm == 6) {
-          printf("%s [%04x], %02x", grp_table[1][reg], (code[3] << 8) | code[2], code[4]);
+          printf("%s [%04x], %02x", grp_table[1][reg], READ16(2), code[4]);
         } else {
           printf("%s %s, %02x", grp_table[1][reg], rm_table[mod][rm], code[2]);
         }
       } else if (mod == 0b01) {
         // 01 Use R/M Table 2 with 8-bit displacement
-        //printf("ADD %s, %s", rm_table[mod][rm], reg_table[w][reg]);
         unimplemented_instruction(state);
       } else if (mod == 0b10) {
         // 10 Use R/M Table 2 with 16-bit displacement
-        //printf("%s %s, %02x", grp_table[1][reg], rm_table[mod][rm], code[2]);
         unimplemented_instruction(state);
       } else if (mod == 0b11) {
         // 11 Two register instruction; use REG table   
@@ -220,15 +217,13 @@ void disassemble_opcode_8086(state_t *state, int ip) {
 
       if (mod == 0b00) { // 00 Use R/M Table 1 for R/M operand
         if (rm == 6) {
-          printf("MOV %s, [%04x]", sreg_table[reg], (code[3] << 8) | code[2]);
+          printf("MOV %s, [%04x]", sreg_table[reg], READ16(2));
         } else {
           printf("MOV %s, %s", sreg_table[reg], rm_table[mod][rm]);
         }
       } else if (mod == 0b01) { // 01 Use R/M Table 2 with 8-bit displacement
-        //printf("MOV %s, %s", rm_table[mod][rm], reg_table[w][reg]);
         unimplemented_instruction(state);
       } else if (mod == 0b10) { // 10 Use R/M Table 2 with 16-bit displacement
-        //printf("MOV %s, %s", sreg_table[reg], rm_table[mod][reg]);
         unimplemented_instruction(state);
       } else if (mod == 0b11) { // 11 Two register instruction; use REG table
         printf("MOV %s, %s", sreg_table[reg], reg_table[w][rm]);
@@ -245,10 +240,10 @@ void disassemble_opcode_8086(state_t *state, int ip) {
   case 0x9c: printf("PUSHF"); break;
   case 0x9d: printf("POPF"); break;
 
-  case 0xa0: printf("MOV AL, [+%02x]", (int8_t)code[1]); break; // MOV AL, Ob
-  case 0xa1: printf("MOV AX, [+%04x]", (int16_t)((code[2] << 8) | code[1])); break; // MOV AX, Ov
-  case 0xa2: printf("MOV [+%02x], AL", (int8_t)code[1]); break; // MOV Ob, AL
-  case 0xa3: printf("MOV [+%04x], AX", (int16_t)((code[2] << 8) | code[1])); break; // MOV Ov, AX
+  case 0xa0: printf("MOV AL, [+%02x]", (int8_t)code[1]); break;
+  case 0xa1: printf("MOV AX, [+%04x]", (int16_t)(READ16(1))); break;
+  case 0xa2: printf("MOV [+%02x], AL", (int8_t)code[1]); break;
+  case 0xa3: printf("MOV [+%04x], AX", (int16_t)(READ16(1))); break;
 
   case 0xa4: printf("MOVSB"); break;
   case 0xa5: printf("MOVSW"); break;
@@ -265,7 +260,7 @@ void disassemble_opcode_8086(state_t *state, int ip) {
   case 0xb8 ... 0xbf: // MOV reg16, Iv
     {
       uint8_t reg = code[0] & 0b111;
-      printf("MOV %s, %04x", reg_table[1][reg], (code[2] << 8) | code[1]);
+      printf("MOV %s, %04x", reg_table[1][reg], READ16(1));
     }
     break;
 
@@ -279,13 +274,12 @@ void disassemble_opcode_8086(state_t *state, int ip) {
       if (mod == 0b00) {
         // 00 Use R/M Table 1 for R/M operand
         if (rm == 6) {
-          printf("MOV [%04x], %02x", (code[3] << 8) | code[2], code[4]);
+          printf("MOV [%04x], %02x", READ16(2), code[4]);
         } else {
           printf("MOV %s, %02x", rm_table[mod][rm], code[2]);
         }
       } else if (mod == 0b01) {
         // 01 Use R/M Table 2 with 8-bit displacement
-        //printf("MOV %s, %s", rm_table[mod][rm], reg_table[w][reg]);
         unimplemented_instruction(state);
       } else if (mod == 0b10) {
         // 10 Use R/M Table 2 with 16-bit displacement
@@ -293,7 +287,6 @@ void disassemble_opcode_8086(state_t *state, int ip) {
       } else if (mod == 0b11) {
         // 11 Two register instruction; use REG table
         unimplemented_instruction(state); // second arg is Iv
-        // printf("ADD %s, %s", reg_table[w][rm], reg_table[w][reg]);
       } else {
         // should never be reached
         unimplemented_instruction(state);
@@ -309,21 +302,19 @@ void disassemble_opcode_8086(state_t *state, int ip) {
       if (mod == 0b00) {
         // 00 Use R/M Table 1 for R/M operand
         if (rm == 6) {
-          printf("MOV [%04x], %04x", (code[3] << 8) | code[2], (code[5] << 8) | code[4]);
+          printf("MOV [%04x], %04x", READ16(2), READ16(4));
         } else {
-          printf("MOV %s, %04x", rm_table[mod][rm], (code[3] << 8) | code[2]);
+          printf("MOV %s, %04x", rm_table[mod][rm], READ16(2));
         }
       } else if (mod == 0b01) {
         // 01 Use R/M Table 2 with 8-bit displacement
-        //printf("MOV %s, %s", rm_table[mod][rm], reg_table[w][reg]);
         unimplemented_instruction(state);
       } else if (mod == 0b10) {
         // 10 Use R/M Table 2 with 16-bit displacement
-        printf("MOV %s, %04x", rm_table[mod][rm], (code[3] << 8) | code[2]);
+        printf("MOV %s, %04x", rm_table[mod][rm], READ16(2));
       } else if (mod == 0b11) {
         // 11 Two register instruction; use REG table
         unimplemented_instruction(state); // second arg is Iv
-        // printf("ADD %s, %s", reg_table[w][rm], reg_table[w][reg]);
       } else {
         // should never be reached
         unimplemented_instruction(state);
@@ -331,7 +322,7 @@ void disassemble_opcode_8086(state_t *state, int ip) {
     }
     break;
 
-  case 0xe8: printf("CALL %04x", state->ip + (int16_t)((code[2] << 8) | code[1]) + 3); break;
+  case 0xe8: printf("CALL %04x", state->ip + (int16_t)(READ16(1)) + 3); break;
   case 0xe9: printf("JMP Jv"); break;
   case 0xea: printf("JMP Ap"); break;
     
@@ -354,7 +345,7 @@ void disassemble_opcode_8086(state_t *state, int ip) {
       uint8_t rm = code[1] & 0b00000111;
       if(0 == mod) {
         if (6 == rm) {
-          printf("%s [%04x]", grp_table[4][reg], (code[3] << 8) | code[2]);
+          printf("%s [%04x]", grp_table[4][reg], READ16(2));
         } else {
           printf("%s %s", grp_table[4][reg], rm_table[mod][rm]);
         }
@@ -379,7 +370,7 @@ void disassemble_opcode_8086(state_t *state, int ip) {
       uint8_t rm = code[1] & 0b00000111;
       if(0 == mod) {
         if (6 == rm) {
-          printf("%s [%04x]", grp_table[5][reg], (code[3] << 8) | code[2]);
+          printf("%s [%04x]", grp_table[5][reg], READ16(2));
         } else {
           printf("%s %s", grp_table[5][reg], rm_table[mod][rm]);
         }
