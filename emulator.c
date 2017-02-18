@@ -721,15 +721,7 @@ int emulate_op(state_t *state) {
   case 0xb5: state->ch = code[1]; state->ip++; break; // MOV CH, Ib
   case 0xb6: state->dh = code[1]; state->ip++; break; // MOV DH, Ib
   case 0xb7: state->bh = code[1]; state->ip++; break; // MOV BH, Ib
-
-  case 0xb8: state->ax = READ16(1); state->ip += 2; break; // MOV AX, Iv
-  case 0xb9: state->cx = READ16(1); state->ip += 2; break; // MOV CX, Iv
-  case 0xba: state->dx = READ16(1); state->ip += 2; break; // MOV DX, Iv
-  case 0xbb: state->bx = READ16(1); state->ip += 2; break; // MOV BX, Iv
-  case 0xbc: state->sp = READ16(1); state->ip += 2; break; // MOV SP, Iv
-  case 0xbd: state->bp = READ16(1); state->ip += 2; break; // MOV BP, Iv
-  case 0xbe: state->si = READ16(1); state->ip += 2; break; // MOV SI, Iv
-  case 0xbf: state->di = READ16(1); state->ip += 2; break; // MOV DI, Iv
+  case 0xb8 ... 0xbf: *(&state->ax + (code[0] & 0b111)) = READ16(1); state->ip += 2; break;
 
   case 0xc3: // RET
     {
@@ -767,7 +759,6 @@ int emulate_op(state_t *state) {
       uint8_t reg = (code[1] & 0b00111000) >> 3;
       uint8_t rm = code[1] & 0b00000111;
 
-      // uint16_t *ev;
       uint8_t *reg_table8[] = {&state->al, &state->cl, &state->dl, &state->bl, &state->ah, &state->ch, &state->dh, &state->bh};
 
       if(0 == mod) {
@@ -807,7 +798,6 @@ int emulate_op(state_t *state) {
       uint8_t reg = (code[1] & 0b00111000) >> 3;
       uint8_t rm = code[1] & 0b00000111;
 
-      // uint16_t *ev;
       void (*grp5[])(state_t*, uint16_t *) = {&grp5_inc, &grp5_dec, &grp5_call, &grp5_call_mp, &grp5_jmp, &grp5_jmp_mp, &grp5_push};
       uint16_t *reg_table16[] = {&state->ax, &state->cx, &state->dx, &state->bx, &state->sp, &state->bp, &state->si, &state->di};
 
@@ -825,9 +815,9 @@ int emulate_op(state_t *state) {
         unimplemented_instruction(state);
       } else {
         // should never be reached
+        unimplemented_instruction(state);
       }
       state->ip++;
-      //unimplemented_instruction(state);
     }
     break;
     
