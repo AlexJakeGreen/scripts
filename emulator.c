@@ -628,7 +628,7 @@ void grp5_push(state_t *state, uint16_t *arg) { unimplemented_instruction(state)
 int emulate_op(state_t *state) {
   unsigned char *opcode = &state->memory[state->ip];
 
-  print_state(state);
+  //print_state(state);
   disassemble_opcode_8086(state, state->ip);
 
   switch(*opcode) {

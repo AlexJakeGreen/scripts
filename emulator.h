@@ -86,6 +86,6 @@ typedef struct  __attribute__((__packed__)) {
 
 int emulate_op(state_t *state);
 
-extern int disassemble_opcode_8086(state_t *, int);
+extern void disassemble_opcode_8086(state_t *, int);
 
 #endif /* emulator_h */
