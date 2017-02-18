@@ -24,13 +24,6 @@ typedef struct  __attribute__((__packed__)) {
       uint8_t ah;
     };
   };
-  union { // base
-    uint16_t bx;
-    struct {
-      uint8_t bl;
-      uint8_t bh;
-    };
-  };
   union { // count
     uint16_t cx;
     struct {
@@ -43,6 +36,13 @@ typedef struct  __attribute__((__packed__)) {
     struct {
       uint8_t dl;
       uint8_t dh;
+    };
+  };
+  union { // base
+    uint16_t bx;
+    struct {
+      uint8_t bl;
+      uint8_t bh;
     };
   };
   
