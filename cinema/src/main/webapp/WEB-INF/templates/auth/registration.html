@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+
+<head th:replace="fragments/headTag :: headTag"></head>
+
+<body>
+
+<div class="top-bar" th:replace="fragments/topBar :: topBar"></div>
+
+<div class="row column">
+    <h2>Registration</h2>
+</div>
+
+<div class="row">
+    <div class="medium-6 medium-centered large-4 large-centered columns">
+        <div class="row column">
+            <form method="POST" th:action="@{/registration}" th:object="${user}">
+                <p>Name</p>
+                <p><input type="text" th:field="*{name}"/></p>
+                <p>Username</p>
+                <p><input type="text" th:field="*{username}"/></p>
+                <p>Password</p>
+                <p><input type="password" th:field="*{password}"/></p>
+                <p>E-Mail</p>
+                <p><input type="email" th:field="*{email}"/></p>
+                <p>Birthday</p>
+                <p><input type="date" th:pattern="yyyy-MM-dd" th:field="*{birthday}" placeholder="yyyy-MM-dd"/></p>
+                <input type="submit" class="button" />
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:replace="fragments/footer :: footer"></div>
+
+</body>
+</html>

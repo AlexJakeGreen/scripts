@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+
+<head th:replace="fragments/headTag :: headTag"></head>
+
+<body>
+<div class="top-bar" th:replace="fragments/topBar :: topBar"></div>
+
+<div class="row column">
+    Batch files: <span th:text="${batchFiles}"></span>
+</div>
+
+<div class="row column">
+    Uploaded Events Total: <span th:text="${uploadedEvents}"></span>
+</div>
+
+<div class="row column">
+    Uploaded Users Total: <span th:text="${uploadedUsers}"></span>
+</div>
+</body>
+</html>

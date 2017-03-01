@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+
+<head th:replace="fragments/headTag :: headTag"></head>
+
+<body>
+
+<div class="top-bar" th:replace="fragments/topBar :: topBar"></div>
+
+<div th:if="${message}" th:text="${message}" class="callout primary">#</div>
+
+<div id="main-content" class="row full-min-height">
+    <h4 class="column" th:text="${event.name}"></h4>
+    <div class="row">
+        <div class="medium-4 columns">
+            <img th:src="@{|/assets/img/thumbnails/${event.image_url}|}" th:alt="${event.name}">
+        </div>
+        <div class="medium-8 columns">
+            <div class="row column">
+                $<span th:text="${event.price}">$$</span>
+            </div>
+            <div class="row medium-4 columns">
+                <form th:action="@{|/booking|}" method="POST">
+                    <input type="hidden" name="eventId" th:value="${event.id}">
+                    <input type="number" name="seatNumber" placeholder="seat#">
+                    <input type="submit" value="Book!" class="button">
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="fragments/footer :: footer"></div>
+
+</body>
+</html>

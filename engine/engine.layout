@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="Release" />
+	<File name="client_main.c" open="1" top="0" tabpos="6">
+		<Cursor position="25" topLine="0" />
+	</File>
+	<File name="client_main.h" open="1" top="0" tabpos="5">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="common.c" open="1" top="1" tabpos="2">
+		<Cursor position="475" topLine="16" />
+	</File>
+	<File name="common.h" open="1" top="0" tabpos="3">
+		<Cursor position="160" topLine="0" />
+	</File>
+	<File name="cvar.c" open="0" top="0" tabpos="2">
+		<Cursor position="1379" topLine="44" />
+	</File>
+	<File name="main.c" open="1" top="0" tabpos="1">
+		<Cursor position="18" topLine="0" />
+	</File>
+	<File name="video_main.c" open="1" top="0" tabpos="4">
+		<Cursor position="80" topLine="1" />
+	</File>
+</CodeBlocks_layout_file>

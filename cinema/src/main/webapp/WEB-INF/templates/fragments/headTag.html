@@ -1,0 +1,29 @@
+<!doctype html>
+<html class="no-js" lang="en" xmlns:th="http://www.w3.org/1999/xhtml" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head th:fragment="headTag">
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cinema</title>
+    <link rel="stylesheet" href="/assets/css/foundation.min.css" />
+    <link rel="stylesheet" href="/assets/css/app.css" />
+    <script src="/assets/js/vendor/jquery.min.js"></script>
+    <script src="/assets/js/foundation.min.js"></script>
+    <script src="/assets/js/app.js"></script>
+    <script sec:authorize="hasRole('ROLE_ADMIN') OR hasRole('ROLE_USER')">
+        $(document).ready(function(){
+            $.get("/booking/getBalance", function(data){
+                if(data.balance) {
+                    $("span#user-balance").text(data.balance);
+                } else {
+                    console.log("Can't get balance, error: " + data.error);
+                }
+            }, "json");
+        });
+    </script>
+</head>
+
+<body>
+</body>
+
+</html>

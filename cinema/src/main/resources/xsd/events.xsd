@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xs:schema version="1.0"
+           targetNamespace="http://bars.kh.ua/soap"
+           xmlns:tns="http://bars.kh.ua/soap"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="FindEventByIdRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="id" type="xs:long"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="FindEventByIdResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="event" type="tns:event" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="event">
+    <xs:sequence>
+      <xs:element name="auditoriumId" type="xs:long" />
+      <xs:element name="date" type="xs:string" minOccurs="0"/>
+      <xs:element name="id" type="xs:long" minOccurs="0"/>
+      <xs:element name="image_url" type="xs:string" minOccurs="0"/>
+      <xs:element name="name" type="xs:string" minOccurs="0"/>
+      <xs:element name="price" type="xs:int"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>
+

@@ -1,0 +1,50 @@
+<!doctype html>
+<html class="no-js" lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+
+<head th:replace="fragments/headTag :: headTag"></head>
+
+<body>
+
+<div class="top-bar" th:replace="fragments/topBar :: topBar"></div>
+
+<br>
+
+<div id="main-content" class="row full-min-height">
+    <div class="form-container radius-box glassy-bg small-10 small-centered medium-8 large-6 columns">
+        <h2>Login</h2>
+        <p th:if="${loginError}">Wrong user or password</p>
+        <p th:if="${message}" th:text="${message}"></p>
+        <form th:action="@{/login}" method="post">
+            <div class="mb1">
+                <input type="text" id="username" name="username" autofocus="true" class="radius" placeholder="username"/></div>
+            <div class="mb1">
+                <input type="password" id="password" name="password"
+                       autocomplete="off" placeholder="password" class="radius" />
+            </div>
+
+
+        <div class="switch round small mb1">
+            <div class="inline-block left prm">
+                <input type="checkbox" id="remember-me" name="remember-me"/>
+                <label for="remember-me">Remember me</label></div>
+            <span>Remember me</span>
+        </div>
+
+
+        <div class="clear">
+            <input type="submit" value="Log In" class="button" />
+        </div>
+        </form>
+    </div>
+    <p>demo accounts:</p>
+    <p>green - 1234 - ADMIN</p>
+    <p>cat - 1234 - USER+ADMIN</p>
+    <p>test - 1234 - USER</p>
+</div>
+
+
+
+<div th:replace="fragments/footer :: footer"></div>
+
+</body>
+</html>

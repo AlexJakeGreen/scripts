@@ -1,0 +1,13 @@
+{
+  "events": [
+    {"name": "event 1 from batch 2", "price": 38, "auditorium_id": 2},
+    {"name": "event 2 from batch 2", "price": 22, "auditorium_id": 2}
+  ],
+
+  "users": [
+    {"name": "user 1 from batch 2", "email": "sdf3@sdf.ff",
+      "username": "login3", "enabled": true},
+    {"name": "user 2 from batch 2", "email": "rrr4@rr.rr",
+      "username": "login4", "enabled": true}
+  ]
+}

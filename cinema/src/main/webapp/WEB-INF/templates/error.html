@@ -1,0 +1,30 @@
+    <!doctype html>
+    <html class="no-js" lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+
+    <head th:replace="fragments/headTag :: headTag"></head>
+
+    <body>
+
+    <div class="top-bar" th:replace="fragments/topBar :: topBar"></div>
+
+    <div class="row">
+    <div class="callout alert">
+        <h4>Fixies already know and are working on this issue!</h4>
+    </div>
+
+    <div class="callout">
+        <h5>Message:</h5>
+        <p th:text="${exception.getLocalizedMessage()}"></p>
+    </div>
+
+
+    <div class="callout">
+        <h5>Stack trace:</h5>
+        <tr th:each="line : ${exception.getStackTrace()}">
+            <td th:text="${line}">#</td>
+        </tr>
+
+    </div>
+        </div>
+    </body>
+    </html>

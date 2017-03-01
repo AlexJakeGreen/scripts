@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+
+<head th:replace="fragments/headTag :: headTag"></head>
+
+<body>
+
+<div class="top-bar" th:replace="fragments/topBar :: topBar"></div>
+
+<div class="row column">
+    <h2>Show User</h2>
+</div>
+
+<div class="row">
+    <table>
+        <tbody>
+        <tr>
+            <td>Id</td>
+            <td th:text="${user.id}">#</td>
+        </tr>
+        <tr>
+            <td>Name</td>
+            <td th:text="${user.name}">#</td>
+        </tr>
+        <tr>
+            <td>E-Mail</td>
+            <td th:text="${user.email}">#</td>
+        </tr>
+        <tr>
+            <td>Tickets</td>
+            <td th:text="${user.tickets}">#</td>
+        </tr>
+        <tr>
+            <td>Birthday</td>
+            <td th:text="${user.birthday}">#</td>
+        </tr>
+        </tbody>
+    </table>
+
+</div>
+
+<div th:replace="fragments/footer :: footer"></div>
+
+</body>
+</html>

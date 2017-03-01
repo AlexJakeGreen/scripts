@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4">
+<head>
+</head>
+<body>
+
+<div class="top-bar" th:fragment="topBar">
+    <div class="top-bar-left">
+        <ul class="dropdown menu" data-dropdown-menu>
+            <li class="menu-text">Cinema</li>
+            <li><a th:href="@{|/events|}">Events</a></li>
+            <li sec:authorize="hasRole('ROLE_ADMIN')">
+                <a href="#">Admin Area</a>
+                <ul class="menu vertical">
+                    <li><a th:href="@{|/upload|}">Upload</a></li>
+                    <li><a th:href="@{|/users/getGenericException|}">Test Exception</a></li>
+                    <li><a th:href="@{|/users|}">Users</a></li>
+                    <li><a th:href="@{|/tickets|}">Tickets</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+    <div class="top-bar-right">
+        <ul class="menu dropdown" data-dropdown-menu>
+            <li sec:authorize="isAuthenticated()" sec:authentication="name">#</li>
+            <li style="font-size: 8px;"
+                sec:authorize="isAuthenticated()">[Prepaid: <span th:text="${prepaid}" id="user-balance">#</span>]</li>
+            <li sec:authorize="isAuthenticated()">
+                <form th:action="@{/logout}" method="POST">
+                    <button type="submit" class="button small">Logout</button>
+                </form>
+            </li>
+
+            <li sec:authorize="!isAuthenticated()">
+                <a th:href="@{/registration}" th:text="Register">Register</a>
+            </li>
+            <li sec:authorize="!isAuthenticated()">
+                <a th:href="@{/login}" th:text="Login">Login</a>
+            </li>
+        </ul>
+    </div>
+    <div class="top-bar-right">
+        <ul class="menu">
+            <li sec:authorize="hasRole('ROLE_ADMIN')">
+                <form th:action="@{|/search|}" method="POST">
+                    <ul class="menu">
+                        <li><input type="search" name="searchValue" placeholder="Search User by Name"></li>
+                        <li><button type="submit" class="button">Search</button></li>
+                    </ul>
+                </form>
+            </li>
+        </ul>
+    </div>
+
+</div>
+
+
+</body>
+</html>

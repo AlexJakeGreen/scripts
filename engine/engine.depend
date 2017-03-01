@@ -1,0 +1,43 @@
+# depslib dependency file v1.0
+1357574563 source:/home/green/projects/engine/cvar.c
+	<stdio.h>
+	<stdlib.h>
+	"cvar.h"
+	"common.h"
+
+1357510618 /home/green/projects/engine/cvar.h
+
+1357682220 source:/home/green/projects/engine/main.c
+	<stdio.h>
+	"main.h"
+	"common.h"
+	"cvar.h"
+	"video_main.h"
+
+1357505936 /home/green/projects/engine/main.h
+
+1357848004 source:/home/green/projects/engine/common.c
+	<stdio.h>
+	<stdlib.h>
+	<signal.h>
+	<stdarg.h>
+	"common.h"
+	"client_main.h"
+	"video_main.h"
+
+1357763717 /home/green/projects/engine/common.h
+
+1357681961 source:/home/green/projects/engine/client_main.c
+	"video_main.h"
+
+1357849576 source:/home/green/projects/engine/video_main.c
+	<X11/Xlib.h>
+	<GL/gl.h>
+	<GL/glx.h>
+	"common.h"
+	"video_main.h"
+
+1357848885 /home/green/projects/engine/video_main.h
+
+1357676433 /home/green/projects/engine/client_main.h
+

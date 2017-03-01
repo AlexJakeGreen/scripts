@@ -1,0 +1,51 @@
+    <!DOCTYPE html>
+    <html lang="en" xmlns:th="http://www.w3.org/1999/xhtml" xmlns:pages="http://www.w3.org/1999/xhtml">
+
+    <head th:replace="fragments/headTag :: headTag"></head>
+
+    <body>
+
+    <div class="top-bar" th:replace="fragments/topBar :: topBar"></div>
+
+    <div class="row column">
+        <h2>Users</h2>
+    </div>
+
+    <div class="row column">
+        <a th:href="@{|/users/new|}" class="button">Add user</a>
+    </div>
+
+    <div class="row column">
+        <table>
+            <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>E-Mail</th>
+                <th>Tickets</th>
+                <th>Birthday</th>
+                <th>Roles</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="user : ${users}"
+                pages:pdf="user.id, user.name, user.email, user.tickets">
+                <td th:text="${user.id}">#</td>
+                <td>
+                    <a href="userDetails.html"
+                       th:href="@{|/users/${user.id}|}"
+                       th:text="${user.name}">#</a>
+                </td>
+                <td th:text="${user.email}">#</td>
+                <td th:text="${user.tickets}">#</td>
+                <td th:text="${#calendars.format(user.birthday, 'yyyy-MM-dd')}">#</td>
+                <td th:text="${user.roles}"></td>
+            </tr>
+            </tbody>
+        </table>
+        </div>
+
+        <div th:replace="fragments/footer :: footer"></div>
+
+    </body>
+    </html>

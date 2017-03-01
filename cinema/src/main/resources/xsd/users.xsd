@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xs:schema version="1.0"
+           targetNamespace="http://bars.kh.ua/soap"
+           xmlns:tns="http://bars.kh.ua/soap"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="RegisterUserRequest">
+    <xs:complexType>
+      <xs:sequence>
+          <xs:element name="name" type="xs:string"/>
+          <xs:element name="email" type="xs:string"/>
+          <xs:element name="username" type="xs:string"/>
+        <xs:element name="password" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RegisterUserResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="user" type="tns:user"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="FindUserByIdRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="id" type="xs:long"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="FindUserByIdResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="user" type="tns:user"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="FindUserByEmailRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="email" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="FindUserByEmailResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="user" type="tns:user"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="FindUserByNameRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="name" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="FindUserByNameResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="user" type="tns:user"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="FindUsersByNameRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="name" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="FindUsersByNameResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="user" type="tns:user" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="user">
+    <xs:sequence>
+      <xs:element name="email" type="xs:string" minOccurs="0"/>
+      <xs:element name="enabled" type="xs:boolean" minOccurs="0"/>
+      <xs:element name="id" type="xs:long" minOccurs="0"/>
+      <xs:element name="name" type="xs:string" minOccurs="0"/>
+      <xs:element name="password" type="xs:string" minOccurs="0"/>
+      <xs:element name="roles" type="xs:string" minOccurs="0"/>
+      <xs:element name="systemMessage" type="xs:string" minOccurs="0"/>
+      <xs:element name="tickets" type="xs:int"/>
+      <xs:element name="username" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

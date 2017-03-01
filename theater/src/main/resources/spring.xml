@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:c="http://www.springframework.org/schema/c"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+                           http://www.springframework.org/schema/util
+                           http://www.springframework.org/schema/util/spring-util-3.2.xsd
+                           http://www.springframework.org/schema/aop
+ 		           http://www.springframework.org/schema/aop/spring-aop-3.2.xsd
+                           http://www.springframework.org/schema/jdbc
+                           http://www.springframework.org/schema/jdbc/spring-jdbc.xsd">
+
+  <aop:aspectj-autoproxy />
+
+  <bean id="counterAspect" class="ua.kh.bars.aop.CounterAspect">
+    <constructor-arg ref="counterDAO" />
+  </bean>
+  <bean id="discountAspect" class="ua.kh.bars.aop.DiscountAspect" />
+  <bean id="luckyWinnerAspect" class="ua.kh.bars.aop.LuckyWinnerAspect" />
+  
+  <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+    <property name="locations">
+      <list>
+        <value>classpath:db.properties</value>
+      </list>
+    </property>
+    <property name="ignoreResourceNotFound" value="true" />
+    <property name="systemPropertiesMode">
+      <util:constant
+          static-field="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer.SYSTEM_PROPERTIES_MODE_OVERRIDE" />
+    </property>
+  </bean>
+
+  <bean id="app" class="ua.kh.bars.App" />
+
+  <bean id="userDAO" class="ua.kh.bars.dao.UserDAO">
+    <constructor-arg ref="jdbcTemplate" />
+  </bean>
+  <bean id="eventDAO" class="ua.kh.bars.dao.EventDAO">
+    <constructor-arg ref="jdbcTemplate" />
+  </bean>
+  <bean id="counterDAO" class="ua.kh.bars.dao.CounterDAO">
+    <constructor-arg ref="jdbcTemplate" />
+  </bean>
+  <bean id="userService" class="ua.kh.bars.service.UserService">
+    <constructor-arg ref="userDAO" />
+  </bean>
+  <bean id="eventService" class="ua.kh.bars.service.EventService">
+    <constructor-arg ref="eventDAO" />
+  </bean>
+  <bean id="auditoriumDAO" class="ua.kh.bars.dao.AuditoriumDAO">
+    <constructor-arg ref="jdbcTemplate" />
+  </bean>
+
+  <bean id="auditoriumService" class="ua.kh.bars.service.AuditoriumService">
+    <constructor-arg ref="auditoriumDAO" />
+  </bean>
+
+  <bean id="discountService" class="ua.kh.bars.service.DiscountService">
+    <constructor-arg>
+      <list>
+        <bean id="birthdayStrategy" class="ua.kh.bars.strategy.BirthdayStrategy">
+          <constructor-arg value="0" /> <!--  0-100% -->
+          <constructor-arg value="5" />
+        </bean>
+        <bean id="every10TicketStrategy" class="ua.kh.bars.strategy.Every10TicketStrategy">
+          <constructor-arg value="0" /> <!--  0-100% -->
+          <constructor-arg value="50" />
+        </bean> 
+      </list>
+    </constructor-arg>
+  </bean>
+
+  <bean id="ticketDAO" class="ua.kh.bars.dao.TicketDAO">
+        <constructor-arg ref="jdbcTemplate" />
+  </bean>
+
+  <bean id="bookingService" class="ua.kh.bars.service.BookingService">
+    <constructor-arg ref="discountService" />
+    <constructor-arg ref="ticketDAO" />
+    <constructor-arg ref="userService" />
+    <constructor-arg value="2.0" />
+    <constructor-arg value="1.2" />
+  </bean>
+
+
+  <jdbc:embedded-database id="dataSource" type="H2">
+    <jdbc:script location="classpath:db-schema.sql"/>
+    <jdbc:script location="classpath:db-test-data.sql"/>
+  </jdbc:embedded-database>
+  
+  <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+    <constructor-arg ref="dataSource"/>
+  </bean>
+  
+</beans>

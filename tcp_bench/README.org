@@ -1,0 +1,15 @@
+=README=
+
+Spawns simultaneous conections.
+
+Usage: ./tcp_bench {ip_address}
+
+
+=Compile=
+
+git clone https://github.com/AlexJakeGreen/tcp_bench.git
+
+cd tcp_bench
+
+make
+

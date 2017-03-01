@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+
+<head th:replace="fragments/headTag :: headTag"></head>
+<script>
+    $(document).ready(function() {
+        $('#add-input').click(function(){
+            $('#input-fields').append( '<div class="row">'
+                    + '<label>Batch File'
+                    + '<input type="file" name="file" />'
+                    + '</label></div>')
+        });
+    });
+</script>
+<body>
+
+<div class="top-bar" th:replace="fragments/topBar :: topBar"></div>
+
+
+<div class="row">
+    <div class="medium-6 medium-centered large-4 large-centered columns">
+
+        <div class="row column">
+            <i>(See batch file examples under resources/dataForUpload)</i>
+        </div>
+
+        <div class="row column">
+            <form action="upload" th:action="@{/upload}" method="post" enctype="multipart/form-data">
+                <div class="row column" id="input-fields">
+                    <div class="row">
+                        <label>Batch File
+                            <input type="file" name="file" />
+                        </label>
+                    </div>
+                </div>
+                <button id="add-input" type="button" class="button">Add More Files</button>
+                <input type="submit" class="button"/>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

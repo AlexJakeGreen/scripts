@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+
+<head th:replace="fragments/headTag :: headTag"></head>
+
+<body>
+
+<div class="top-bar" th:replace="fragments/topBar :: topBar"></div>
+
+<div class="row column">
+    <h2>Tickets</h2>
+</div>
+
+<div class="row column">
+    <table>
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>Price</th>
+            <th>Date</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="ticket : ${tickets}">
+            <td th:text="${ticket.id}"></td>
+            <td th:text="${ticket.price}">#</td>
+            <td th:text="${ticket.date}">#</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div th:replace="fragments/footer :: footer"></div>
+
+</body>
+</html>
