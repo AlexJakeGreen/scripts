@@ -31,9 +31,9 @@ void print_stack(state_t *state) {
 }
 
 void print_state(state_t *state) {
-    printf("\t==PC:%04x SP:%04x A:%02x F:%02x B:%02x C:%02x D:%02x E:%02x H:%02x L:%02x\n",
+    printf("\t==PC:%04x SP:%04x A:%02x F:%02x B:%02x C:%02x D:%02x E:%02x H:%02x L:%02x IX: %04x\n",
            state->register_pc, state->register_sp, state->register_a, state->register_f, state->register_b, state->register_c,
-           state->register_d, state->register_e, state->register_h, state->register_l);
+           state->register_d, state->register_e, state->register_h, state->register_l, state->register_ix);
     // printf("\t==PCH:%02x PCL:%02x\n", state->register_pch, state->register_pcl);
     printf("\t == C: %02x\n", state->flags.c);
     /* printf("\t==Z:%01x S:%01x P:%01x Cy:%01x Ac:%01x\n", */
@@ -206,6 +206,11 @@ void emulate_op_fd(state_t *state) {
         break;
     case 0xe1: state->register_iy = stack_get16(state); state->register_pc += 2; break;
     case 0xe5: stack_put16(state, state->register_iy); state->register_pc += 2; break;
+    case 0xe9: // jp (iy) ????
+      {
+        state->register_pc = state->register_iy;
+      }
+      break;
     default:
         {
             printf("\nemul: unimplemented instruction: %02x %02x\n", code[0], code[1]);
@@ -270,11 +275,24 @@ void emulate_op_dd(state_t *state) {
             state->register_pc += 2;
         }
         break;
+    case 0x21: state->register_ix = *((uint16_t *)(&code[2])); state->register_pc += 4; break; // ld ix, **
+    case 0x7e: // ld a, (ix + *)
+      {
+        int8_t c = code[2];
+        state->register_a = state->memory[state->register_ix + c];
+        state->register_pc += 3;
+      }
+      break;
     case 0x84: add8(state, state->register_ixh); state->register_pc++; break; // add ixh
     case 0x86: add8(state, state->memory[(uint16_t)(state->register_ix + code[2])]); state->register_pc += 2; break; // add (ix + *)
     case 0xcb: emulate_op_dd_cb(state); break; // IX bit instructions
     case 0xe1: state->register_ix = stack_get16(state); state->register_pc += 2; break;
     case 0xe5: stack_put16(state, state->register_ix); state->register_pc += 2; break;
+    case 0xe9: // jp (ix) ????
+      {
+        state->register_pc = state->register_ix;
+      }
+      break;
     default:
         {
             printf("\nemul: unimplemented instruction: %02x %02x\n", code[0], code[1]);
@@ -308,7 +326,7 @@ int emulate_op(state_t *state) {
         exit(EXIT_SUCCESS);
     }
 
-    // disassemble_op(state);
+    disassemble_op(state);
 
     switch(*code) {
     case 0x00: state->register_pc++; break; // nop
@@ -316,6 +334,21 @@ int emulate_op(state_t *state) {
         {
             state->register_bc = *((uint16_t *)(&code[1]));
             state->register_pc += 3;
+        }
+        break;
+    case 0x04: // inc b
+        {
+            if (((state->register_b ^ 1) & 0x80) == 0 
+                && ((1 ^ (state->register_b + 1)) & 0x80) != 0) 
+                state->flags.pv = 1;
+            else
+                state->flags.pv = 0; 
+            state->register_b++;
+            state->flags.n = 0;
+            state->flags.h = (((state->register_b & 0xf) + (1 & 0xf)) & 0x10) > 1;
+            state->flags.z = (state->register_b == 0);
+            state->flags.s = ((state->register_b & 0x80) == 0x80);
+            state->register_pc += 1;
         }
         break;
     case 0x05: dec8(state, &state->register_b); break; // dec b
@@ -376,6 +409,19 @@ int emulate_op(state_t *state) {
             state->register_pc++;
         }
         break;
+    case 0x10: // djnz *
+      {
+        int8_t c = code[1];
+        state->register_b--;
+        if (state->register_b != 0) {
+          state->register_pc += c;
+          state->register_pc += 2;
+        } else {
+          state->register_pc += 2;
+        }
+        // print_state(state);
+      }
+      break;
     case 0x11: // ld de, **
         {
             state->register_de = *((uint16_t *)(&code[1]));
@@ -388,18 +434,18 @@ int emulate_op(state_t *state) {
             state->register_pc++;
         }
         break;
-    case 0x14: // inc b
+    case 0x14: // inc d
         {
-            if (((state->register_b ^ 1) & 0x80) == 0 
-                && ((1 ^ (state->register_b + 1)) & 0x80) != 0) 
+            if (((state->register_d ^ 1) & 0x80) == 0 
+                && ((1 ^ (state->register_d + 1)) & 0x80) != 0) 
                 state->flags.pv = 1;
             else
                 state->flags.pv = 0; 
-            state->register_b++;
+            state->register_d++;
             state->flags.n = 0;
-            state->flags.h = (((state->register_b & 0xf) + (1 & 0xf)) & 0x10) > 1;
-            state->flags.z = (state->register_b == 0);
-            state->flags.s = ((state->register_b & 0x80) == 0x80);
+            state->flags.h = (((state->register_d & 0xf) + (1 & 0xf)) & 0x10) > 1;
+            state->flags.z = (state->register_d == 0);
+            state->flags.s = ((state->register_d & 0x80) == 0x80);
             state->register_pc += 1;
         }
         break;
@@ -420,6 +466,15 @@ int emulate_op(state_t *state) {
         }
         break;
     case 0x1a: state->register_a = state->memory[state->register_de]; state->register_pc++; break; // ld a, (de)
+    case 0x20: // jr nz, *
+      {
+        int8_t c = code[1];
+        if (state->flags.z != 1)
+          state->register_pc += c + 2;
+        else
+          state->register_pc += 2;
+      }
+      break;
     case 0x21: // ld hl, **
         {
             state->register_hl = *((uint16_t *)(&code[1]));
@@ -434,6 +489,15 @@ int emulate_op(state_t *state) {
         }
         break;
     case 0x26: state->register_h = code[1]; state->register_pc += 2; break; // ld h, *
+    case 0x28: // jr z, *
+      {
+        int8_t c = code[1];
+        if (state->flags.z == 1)
+          state->register_pc += c + 2;
+        else
+          state->register_pc += 2;
+      }
+      break;
     case 0x29: // add hl, hl
         {
             uint32_t res = state->register_hl + state->register_hl;
@@ -458,6 +522,15 @@ int emulate_op(state_t *state) {
             state->register_pc++;
         }
         break;
+    case 0x30: // jr nc, *
+      {
+        int8_t c = code[1];
+        if (state->flags.c != 1)
+          state->register_pc += c + 2;
+        else
+          state->register_pc += 2;
+      }
+      break;
     case 0x31: state->register_sp = *((uint16_t *)(&code[1])); state->register_pc += 3; break; // ld sp, **
     case 0x32: // ld (**), a
         {
@@ -487,6 +560,15 @@ int emulate_op(state_t *state) {
             state->register_pc += 2;
         }
         break;
+    case 0x38: // jr c, *
+      {
+        int8_t c = code[1];
+        if (state->flags.c == 1)
+          state->register_pc += c + 2;
+        else
+          state->register_pc += 2;
+      }
+      break;
     case 0x3a: // ld a, (**)
         {
             state->register_a = state->memory[*((uint16_t *)(&code[1]))];
@@ -546,6 +628,7 @@ int emulate_op(state_t *state) {
         }
         break;
     case 0x5f: state->register_e = state->register_a; state->register_pc++; break; // ld e, a
+    case 0x65: state->register_h = state->register_l; state->register_pc++; break; // ld h, l
     case 0x66: // ld h, (hl)
         {
             state->register_h = state->memory[state->register_hl];
@@ -573,6 +656,14 @@ int emulate_op(state_t *state) {
     case 0xb7: or8(state, &state->register_a); break; // or a
     case 0xbe: cp8(state, state->memory[state->register_hl]); break; // cp (hl)
 
+    case 0xc0: // ret nz
+      {
+        if (state->flags.z != 1)
+          state->register_pc = stack_get16(state);
+        else
+          state->register_pc++;
+      }
+      break;
     case 0xc1: state->register_bc = stack_get16(state); state->register_pc += 1; break; // pop bc
     case 0xc2: // jp nz, **
         {
@@ -599,6 +690,14 @@ int emulate_op(state_t *state) {
         }
         break;
     case 0xc6: add8(state, code[1]); state->register_pc++; break; // add a, *
+    case 0xc8: // ret z
+      {
+        if (state->flags.z == 1)
+          state->register_pc = stack_get16(state);
+        else
+          state->register_pc++;
+      }
+      break;
     case 0xc9: // ret
         {
             state->register_pc = stack_get16(state);
@@ -614,6 +713,15 @@ int emulate_op(state_t *state) {
         }
         break;
     case 0xcb: emulate_op_cb(state); break;
+    case 0xcc: // call z, **
+        {
+            state->register_pc += 3;
+            if (state->flags.z == 1) {
+                stack_put16(state, state->register_pc);
+                state->register_pc = *((uint16_t *)(&code[1]));
+            }
+        }
+        break;
     case 0xcd: // call **
         {
             uint16_t addr = *((uint16_t *)(&code[1]));
@@ -709,10 +817,35 @@ int emulate_op(state_t *state) {
         break;
     case 0xdd: emulate_op_dd(state); break;
         
+    case 0xe0: // ret po
+      {
+        if (state->flags.pv != 1)
+          state->register_pc = stack_get16(state);
+        else
+          state->register_pc++;
+      }
+      break;
     case 0xe1: // pop hl
         {
             state->register_hl = stack_get16(state);
             state->register_pc += 1;
+        }
+        break;
+    case 0xe2: // jp po, **
+        {
+            if (state->flags.pv != 1)
+                state->register_pc = *((uint16_t *)(&code[1]));
+            else
+                state->register_pc += 3;
+        }
+        break;
+    case 0xe4: // call po, **
+        {
+            state->register_pc += 3;
+            if (state->flags.pv != 1) {
+                stack_put16(state, state->register_pc);
+                state->register_pc = *((uint16_t *)(&code[1]));
+            }
         }
         break;
     case 0xe5: // push hl
@@ -733,6 +866,27 @@ int emulate_op(state_t *state) {
             state->register_pc += 2;
         }
         break;
+    case 0xe8: // ret pe
+      {
+        if (state->flags.pv == 1)
+          state->register_pc = stack_get16(state);
+        else
+          state->register_pc++;
+      }
+      break;
+    case 0xe9: // jp (hl) ????
+      {
+        state->register_pc = state->register_hl;
+      }
+      break;
+    case 0xea: // jp pe, **
+        {
+            if (state->flags.pv == 1)
+                state->register_pc = *((uint16_t *)(&code[1]));
+            else
+                state->register_pc += 3;
+        }
+        break;
     case 0xeb: //ex de, hl
         {
             uint16_t temp = state->register_de;
@@ -741,31 +895,90 @@ int emulate_op(state_t *state) {
             state->register_pc += 1;
         }
         break;
+    case 0xec: // call pe, **
+        {
+            state->register_pc += 3;
+            if (state->flags.pv == 1) {
+                stack_put16(state, state->register_pc);
+                state->register_pc = *((uint16_t *)(&code[1]));
+            }
+        }
+        break;
     case 0xed: // extended op
         {
             emulate_op_ed(state);
         }
         break;
+    case 0xf0: // ret p
+      {
+        if (state->flags.s != 1)
+          state->register_pc = stack_get16(state);
+        else
+          state->register_pc++;
+      }
+      break;
     case 0xf1: // pop af
         {
             state->register_af = stack_get16(state);
             state->register_pc += 1;
         }
         break;
+    case 0xf2: // jp p, **
+        {
+            if (state->flags.s != 1)
+                state->register_pc = *((uint16_t *)(&code[1]));
+            else
+                state->register_pc += 3;
+        }
+        break;
     case 0xf3: /* printf("DI not implemented. Skipped\n"); */ state->register_pc++; break;
+    case 0xf4: // call p, **
+        {
+            state->register_pc += 3;
+            if (state->flags.s != 1) {
+                stack_put16(state, state->register_pc);
+                state->register_pc = *((uint16_t *)(&code[1]));
+            }
+        }
+        break;
     case 0xf5: // push af
         {
             stack_put16(state, state->register_af);
             state->register_pc += 1;
         }
         break;
+    case 0xf8: // ret m
+      {
+        if (state->flags.s == 1)
+          state->register_pc = stack_get16(state);
+        else
+          state->register_pc++;
+      }
+      break;
     case 0xf9: // ld sp, hl
         {
             state->register_sp = state->register_hl;
             state->register_pc += 1;
         }
         break;
+    case 0xfa: // jp m, **
+        {
+            if (state->flags.s == 1)
+                state->register_pc = *((uint16_t *)(&code[1]));
+            else
+                state->register_pc += 3;
+        }
+        break;
     case 0xfb: state->register_pc++; break; // ei // TODO
+    case 0xfc: // call m, **
+        {
+            state->register_pc += 3;
+            if (state->flags.s == 1) {
+                stack_put16(state, state->register_pc);
+                state->register_pc = *((uint16_t *)(&code[1]));
+            }
+        }
+        break;
     case 0xfd: emulate_op_fd(state); break;
     case 0xfe: cp8(state, code[1]); state->register_pc++; break; // cp *
     default: emul_unimplemented_op(*code); break;

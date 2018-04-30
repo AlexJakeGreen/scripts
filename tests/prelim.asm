@@ -228,32 +228,36 @@ lab6:	ld	hl,lab7
 ; djnz (and (partially) inc a, inc hl)
 lab7:	ld	a,0a5h
 	ld	b,4
-lab8:	rrca
-	djnz	lab8
+lab8:
+03ad	rrca
+03ae	djnz	lab8
 	cp	05ah
-	call	nz,error
-	ld	b,16
-lab9:	inc	a
-	djnz	lab9
-	cp	06ah
-	call	nz,error
-	ld	b,0
-	ld	hl,0
-lab10:	inc	hl
-	djnz	lab10
-	ld	a,h
-	cp	1
-	call	nz,error
-	ld	a,l
-	cp	0
-	call	nz,error
+03b2	call	nz,error
+03b5	ld	b,16
+lab9:
+03b7	inc	a
+03b8	djnz	lab9
+03ba	cp	06ah
+03bc	call	nz,error
+03bf	ld	b,0
+03c1	ld	hl,0
+
+lab10:
+03c4	inc	hl
+03c5	djnz	lab10
+03c7	ld	a,h
+03c8	cp	1
+03ca	call	nz,error
+03cd	ld	a,l
+03ce	cp	0
+03d0	call	nz,error
 	
 ; relative addressing
 reladr:	macro	r
-	ld	&r,hlval
-	ld	a,(&r)
-	cp	0a5h
-	call	nz,error
+03d3	ld	&r,hlval              ; 03d3 dd  ld ix, 04d4 ;; 03d0: 0000 0000 a53c 0000 0000 0000 0000 0000
+03d7	ld	a,(&r)                ; 03d7 dd  ld a, (ix + 00)
+03da	cp	0a5h                  ; 03da fe  cp a5
+03dc	call	nz,error            ; 03dc c4  call 0465
 	ld	a,(&r+1)
 	cp	03ch
 	call	nz,error

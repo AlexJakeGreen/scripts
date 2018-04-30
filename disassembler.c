@@ -22,8 +22,10 @@ void decode_fd(state_t *state) {
     uint8_t *code = &state->memory[state->register_pc];
     switch(code[1]) {
     case 0x09: printf("add iy, bc"); break;
+    case 0x21: printf("ld iy, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xe1: printf("pop iy"); break;
     case 0xe5: printf("push iy"); break;
+    case 0xe9: printf("jp (iy)"); break;
     default: printf("disassm: unimplemented %02x %02x\n", code[0], code[1]); exit(EXIT_SUCCESS); break;
     }
 }
@@ -32,8 +34,11 @@ void decode_dd(state_t *state) {
     uint8_t *code = &state->memory[state->register_pc];
     switch(code[1]) {
     case 0x09: printf("add ix, bc"); break;
+    case 0x21: printf("ld ix, %04x", *((uint16_t *)(&code[2]))); break;
+    case 0x7e: printf("ld a, (ix + %02x)", code[2]); break;
     case 0xe1: printf("pop ix"); break;
     case 0xe5: printf("push ix"); break;
+    case 0xe9: printf("jp (ix)"); break;
     default: printf("disassm: unimplemented %02x %02x\n", code[0], code[1]); exit(EXIT_SUCCESS); break;
     }
 }
@@ -146,7 +151,14 @@ void disassemble_op(state_t *state) {
     case 0x5e: printf("ld e, (hl)"); break;
     case 0x5f: printf("ld e, a"); break;
 
+    case 0x60: printf("ld h, b"); break;
+    case 0x61: printf("ld h, c"); break;
+    case 0x62: printf("ld h, d"); break;
+    case 0x63: printf("ld h, e"); break;
+    case 0x64: printf("ld h, h"); break;
+    case 0x65: printf("ld h, l"); break;
     case 0x66: printf("ld h,(hl)"); break;
+    case 0x67: printf("ld h, a"); break;
     case 0x6f: printf("ld l, a"); break;
 
     case 0x70: printf("ld (hl), b"); break;
@@ -187,14 +199,17 @@ void disassemble_op(state_t *state) {
     case 0xb7: printf("or a"); break;
     case 0xbe: printf("cp (hl)"); break;
         
+    case 0xc0: printf("ret nz"); break;
     case 0xc1: printf("pop bc"); break;
     case 0xc2: printf("jp nz, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xc3: printf("jp %04x", *((uint16_t *)(&code[1]))); break;
     case 0xc4: printf("call %04x", *((uint16_t *)(&code[1]))); break;
     case 0xc5: printf("push bc"); break;
     case 0xc6: printf("add a, %02x", code[1]); break;
+    case 0xc8: printf("ret z"); break;
     case 0xc9: printf("ret"); break;
     case 0xca: printf("jp z, %04x", *((uint16_t *)(&code[1]))); break;
+    case 0xcc: printf("call z, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xcd: printf("call %04x", *((uint16_t *)(&code[1]))); break;
 
     case 0xd0: printf("ret nc"); break;
@@ -210,17 +225,30 @@ void disassemble_op(state_t *state) {
     case 0xdc: printf("call c, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xdd: decode_dd(state); break;
         
+    case 0xe0: printf("ret po"); break;
     case 0xe1: printf("pop hl"); break;
+    case 0xe2: printf("jp po, %04x", *((uint16_t *)(&code[1]))); break;
+    case 0xe4: printf("call po, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xe5: printf("push hl"); break;
     case 0xe6: printf("and %02x", code[1]); break;
+    case 0xe8: printf("ret pe"); break;
+    case 0xe9: printf("jp (hl)"); break;
+    case 0xea: printf("jp pe, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xeb: printf("ex de, hl"); break;
+    case 0xec: printf("call pe, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xed: decode_ed(state); break;
 
+    case 0xf0: printf("ret p"); break;
     case 0xf1: printf("pop af"); break;
+    case 0xf2: printf("jp p, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xf3: printf("di"); break;
+    case 0xf4: printf("call p, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xf5: printf("push af"); break;
+    case 0xf8: printf("ret m"); break;
     case 0xf9: printf("ld sp, hl"); break;
+    case 0xfa: printf("jp m, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xfb: printf("ei"); break;
+    case 0xfc: printf("call m, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xfd: decode_fd(state); break;
     case 0xfe: printf("cp %02x", code[1]); break;
     default: unimplemented_op(*code); break;
