@@ -61,10 +61,15 @@ void disassemble_op(state_t *state) {
     case 0x0e: printf("ld c, %02x", code[1]); break;
     case 0x0f: printf("rrca"); break;
 
+    case 0x10: printf("djnz %02x", code[1]); break;
     case 0x11: printf("ld de, %04x", *((uint16_t *)(&code[1]))); break;
+    case 0x12: printf("ld (de), a"); break;
     case 0x13: printf("inc de"); break;
     case 0x14: printf("inc d"); break;
+    case 0x15: printf("dec d"); break;
     case 0x16: printf("ld d, %02x", code[1]); break;
+    case 0x17: printf("rla"); break;
+    case 0x18: printf("jr *"); break;
     case 0x19: printf("add hl, de"); break;
     case 0x1a: printf("ld a, (de)"); break;
     case 0x1b: printf("dec de"); break;
@@ -72,26 +77,41 @@ void disassemble_op(state_t *state) {
     case 0x1d: printf("dec e"); break;
     case 0x1e: printf("ld e, %02x", code[1]); break;
     case 0x1f: printf("rra"); break;
-        
+
     case 0x20: printf("jr nz, %0x2", code[1]); break;
     case 0x21: printf("ld hl, %04x", *((uint16_t *)(&code[1]))); break;
     case 0x22: printf("ld (%04x), hl", *((uint16_t *)(&code[1]))); break;
     case 0x23: printf("inc hl"); break;
+    case 0x24: printf("inc h"); break;
+    case 0x25: printf("dec h"); break;
     case 0x26: printf("ld h, %02x", code[1]); break;
+    case 0x27: printf("daa"); break;
+    case 0x28: printf("jr z, %02x", code[1]); break;
     case 0x29: printf("add hl, hl"); break;
-    case 0x2b: printf("dec hl"); break;
     case 0x2a: printf("ld hl, (%04x)", *((uint16_t *)(&code[1]))); break;
+    case 0x2b: printf("dec hl"); break;
+    case 0x2c: printf("inc l"); break;
+    case 0x2d: printf("dec l"); break;
+    case 0x2e: printf("ld l, %02x", code[1]); break;
+    case 0x2f: printf("cpl"); break;
 
     case 0x30: printf("jr nc, %02x", code[1]); break;
     case 0x31: printf("ld sp, %04x", *((uint16_t *)(&code[1]))); break;
     case 0x32: printf("ld (%04x), a", *((uint16_t *)(&code[1]))); break;
+    case 0x33: printf("inc sp"); break;
     case 0x34: printf("inc (hl)"); break;
+    case 0x35: printf("dec (hl)"); break;
     case 0x36: printf("ld (hl), %02x", code[1]); break;
+    case 0x37: printf("scf"); break;
+    case 0x38: printf("jr c, %s%02x", (signed)code[1] < 0 ? "-" : "+", (signed)code[1]); break;
+    case 0x39: printf("add hl, sp"); break;
     case 0x3a: printf("ld a, (%04x)", *((uint16_t *)(&code[1]))); break;
+    case 0x3b: printf("dec sp"); break;
     case 0x3c: printf("inc a"); break;
     case 0x3d: printf("dec a"); break;
     case 0x3e: printf("ld a, %02x", code[1]); break;
-        
+    case 0x3f: printf("ccf"); break;
+
     case 0x40: printf("ld b, b"); break;
     case 0x41: printf("ld b, c"); break;
     case 0x42: printf("ld b, d"); break;
@@ -177,9 +197,17 @@ void disassemble_op(state_t *state) {
     case 0xca: printf("jp z, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xcd: printf("call %04x", *((uint16_t *)(&code[1]))); break;
 
+    case 0xd0: printf("ret nc"); break;
     case 0xd1: printf("pop de"); break;
+    case 0xd2: printf("jp nc, %04x", *((uint16_t *)(&code[1]))); break;
+      
+    case 0xd4: printf("call nc, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xd5: printf("push de"); break;
+    case 0xd8: printf("ret c"); break;
+    case 0xd9: printf("exx"); break;
     case 0xda: printf("jp c, %04x", *((uint16_t *)(&code[1]))); break;
+    case 0xdb: printf("in a, (%02x)", code[1]); break;
+    case 0xdc: printf("call c, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xdd: decode_dd(state); break;
         
     case 0xe1: printf("pop hl"); break;

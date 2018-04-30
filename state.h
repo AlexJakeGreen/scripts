@@ -4,14 +4,14 @@
 #include "stdlib.h"
 
 typedef struct {
-    uint8_t s:1; // sign
-    uint8_t z:1; // zero
-    uint8_t pad5:1; // the 5th bit of the last 8-bit instruction that altered flags
-    uint8_t h:1; // half carry
-    uint8_t pad3:1; // the 3rd bit of the last 8-bit instruction that altered flags
-    uint8_t pv:1; // parity/overflow
+    uint8_t c:1; // carry bit0
     uint8_t n:1; // add/substract
-    uint8_t c:1; // carry
+    uint8_t pv:1; // parity/overflow
+    uint8_t pad3:1; // the 3rd bit of the last 8-bit instruction that altered flags
+    uint8_t h:1; // half carry
+    uint8_t pad5:1; // the 5th bit of the last 8-bit instruction that altered flags
+    uint8_t z:1; // zero
+    uint8_t s:1; // sign
 } condition_codes_t;
 
 typedef struct  __attribute__((__packed__)) {
@@ -24,6 +24,14 @@ typedef struct  __attribute__((__packed__)) {
     };
     
     union {
+        uint16_t _register_bc;
+        struct {
+            uint8_t _register_c;
+            uint8_t _register_b;
+        };
+    };
+
+    union {
         uint16_t register_de;
         struct {
             uint8_t register_e;
@@ -32,6 +40,15 @@ typedef struct  __attribute__((__packed__)) {
     };
 
     union {
+        uint16_t _register_de;
+        struct {
+            uint8_t _register_e;
+            uint8_t _register_d;
+        };
+    };
+
+    
+    union {
         uint16_t register_hl;
         struct {
             uint8_t register_l;
@@ -39,6 +56,14 @@ typedef struct  __attribute__((__packed__)) {
         };
     };
 
+    union {
+        uint16_t _register_hl;
+        struct {
+            uint8_t _register_l;
+            uint8_t _register_h;
+        };
+    };
+    
     union {
         uint16_t register_af;
         struct {
@@ -50,6 +75,18 @@ typedef struct  __attribute__((__packed__)) {
         };
     };
 
+    union {
+      uint16_t _register_af;
+      struct {
+        union {
+          uint8_t _register_f;
+          condition_codes_t _flags;
+        };
+        uint8_t _register_a;
+      };
+    };
+
+    
     union {
         uint16_t register_ix;
         struct {
