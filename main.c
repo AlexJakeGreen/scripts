@@ -15,8 +15,8 @@ int main(int argc, const char * argv[]) {
 
   state_t *state = calloc(1, sizeof(state_t));
   state->memory = calloc(1, RAM_SIZE);
-  state->register_sp = 0x0000;
-  state->register_pc = rom_offset;
+  state->r_sp = 0x0000;
+  state->r_pc = rom_offset;
   
   read_rom_file(state, argv[1], rom_offset);
   printf("=====================\n");  

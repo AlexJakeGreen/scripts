@@ -7,7 +7,7 @@ void unimplemented_op(uint8_t code) {
 }
 
 void decode_ed(state_t *state) {
-    uint8_t *code = &state->memory[state->register_pc];
+    uint8_t *code = &state->memory[state->r_pc];
     switch(code[1]) {
     case 0x42: printf("42 sbc hl, bc"); break;
     case 0x73: printf("73 ld (%04x), sp", *((uint16_t *)(&code[2]))); break;
@@ -19,10 +19,12 @@ void decode_ed(state_t *state) {
 }
 
 void decode_fd(state_t *state) {
-    uint8_t *code = &state->memory[state->register_pc];
+    uint8_t *code = &state->memory[state->r_pc];
     switch(code[1]) {
     case 0x09: printf("add iy, bc"); break;
-    case 0x21: printf("ld iy, %04x", *((uint16_t *)(&code[1]))); break;
+    case 0x21: printf("ld iy, %04x", *((uint16_t *)(&code[2]))); break;
+    case 0x23: printf("inc iy"); break;
+    case 0x7e: printf("ld a, (iy + %02x)", code[2]); break;
     case 0xe1: printf("pop iy"); break;
     case 0xe5: printf("push iy"); break;
     case 0xe9: printf("jp (iy)"); break;
@@ -31,10 +33,11 @@ void decode_fd(state_t *state) {
 }
 
 void decode_dd(state_t *state) {
-    uint8_t *code = &state->memory[state->register_pc];
+    uint8_t *code = &state->memory[state->r_pc];
     switch(code[1]) {
     case 0x09: printf("add ix, bc"); break;
     case 0x21: printf("ld ix, %04x", *((uint16_t *)(&code[2]))); break;
+    case 0x23: printf("inc ix"); break;
     case 0x7e: printf("ld a, (ix + %02x)", code[2]); break;
     case 0xe1: printf("pop ix"); break;
     case 0xe5: printf("push ix"); break;
@@ -44,8 +47,8 @@ void decode_dd(state_t *state) {
 }
 
 void disassemble_op(state_t *state) {
-    uint8_t *code = &state->memory[state->register_pc];
-    printf("%04x %02x  ", state->register_pc, code[0]);
+    uint8_t *code = &state->memory[state->r_pc];
+    printf("%04x %02x  ", state->r_pc, code[0]);
 
     switch (*code) {
 

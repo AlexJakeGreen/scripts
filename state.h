@@ -16,106 +16,106 @@ typedef struct {
 
 typedef struct  __attribute__((__packed__)) {
     union {
-        uint16_t register_bc;
+        uint16_t r_bc;
         struct {
-            uint8_t register_c;
-            uint8_t register_b;
+            uint8_t r_c;
+            uint8_t r_b;
         };
     };
     
     union {
-        uint16_t _register_bc;
+        uint16_t _r_bc;
         struct {
-            uint8_t _register_c;
-            uint8_t _register_b;
+            uint8_t _r_c;
+            uint8_t _r_b;
         };
     };
 
     union {
-        uint16_t register_de;
+        uint16_t r_de;
         struct {
-            uint8_t register_e;
-            uint8_t register_d;
+            uint8_t r_e;
+            uint8_t r_d;
         };
     };
 
     union {
-        uint16_t _register_de;
+        uint16_t _r_de;
         struct {
-            uint8_t _register_e;
-            uint8_t _register_d;
+            uint8_t _r_e;
+            uint8_t _r_d;
         };
     };
 
     
     union {
-        uint16_t register_hl;
+        uint16_t r_hl;
         struct {
-            uint8_t register_l;
-            uint8_t register_h;
+            uint8_t r_l;
+            uint8_t r_h;
         };
     };
 
     union {
-        uint16_t _register_hl;
+        uint16_t _r_hl;
         struct {
-            uint8_t _register_l;
-            uint8_t _register_h;
+            uint8_t _r_l;
+            uint8_t _r_h;
         };
     };
     
     union {
-        uint16_t register_af;
+        uint16_t r_af;
         struct {
             union {
-                uint8_t register_f;
+                uint8_t r_f;
                 condition_codes_t flags;
             };
-            uint8_t register_a;
+            uint8_t r_a;
         };
     };
 
     union {
-      uint16_t _register_af;
+      uint16_t _r_af;
       struct {
         union {
-          uint8_t _register_f;
+          uint8_t _r_f;
           condition_codes_t _flags;
         };
-        uint8_t _register_a;
+        uint8_t _r_a;
       };
     };
 
     
     union {
-        uint16_t register_ix;
+        uint16_t r_ix;
         struct {
-            uint8_t register_ixl;
-            uint8_t register_ixh;
+            uint8_t r_ixl;
+            uint8_t r_ixh;
         };
     };
 
     union {
-        uint16_t register_iy;
+        uint16_t r_iy;
         struct {
-            uint8_t register_iyl;
-            uint8_t register_iyh;
+            uint8_t r_iyl;
+            uint8_t r_iyh;
         };
     };
 
     union {
-        uint16_t register_sp;
+        uint16_t r_sp;
         struct {
-            uint8_t register_spl;
-            uint8_t register_sph;
+            uint8_t r_spl;
+            uint8_t r_sph;
         };
     };
 
     union {
-        uint16_t register_pc;
+        uint16_t r_pc;
         struct {
-            uint8_t register_pcl;
-            uint8_t register_pch;
+            uint8_t r_pcl;
+            uint8_t r_pch;
         };
     };
 

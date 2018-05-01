@@ -845,12 +845,13 @@ subyte:	push	bc
 	cp	0
 	jp	z,subshf
 	ld	b,8		; 8 bits
-subclp:	rrca
+subclp:
+1bda	rrca
 	push	af
 	ld	a,0
 	call	c,nxtcbit	; get next counter bit if mask bit was set
 	xor	c		; flip bit if counter bit was set
-	rrca
+1be2	rrca
 	ld	c,a
 	pop	af
 	dec	b
@@ -1071,20 +1072,6 @@ test:
 	push	bc
 	push	de
 	push	hl
-      if	0
-	ld	de,crlf
-	ld	c,9
-	call	bdos
-	ld	hl,iut
-	ld	b,4
-	call	hexstr
-	ld	e,' '
-	ld	c,2
-	call	bdos
-	ld	b,16
-	ld	hl,msbt
-	call	hexstr
-      endif	
 1d2e 	di			; disable interrupts
 1d2f	ld	(spsav),sp	; 1d8d save stack pointer
 	ld	sp,msbt+2	; point to test-case machine state
@@ -1140,7 +1127,7 @@ iut:	ds	4		; max 4 byte instruction under test
 	pop	de
 	pop	bc
 	pop	af
-  1d7c c9	ret                     ; <-- returns to 0x0000 !!!
+1d7c c9	ret                     ; <-- returns to 0x0000 !!!
                                   ; should be 1b3e !!!
 
 ; machine state after test
