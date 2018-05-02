@@ -20,7 +20,7 @@
 	aseg
 	org	100h
 
-0100 c3 JMP $0113;  jp	start
+	jp	start
 
 ; machine state before test (needs to be at predictably constant address)
 msbt:	ds	14
@@ -77,12 +77,11 @@ spbt:	ds	2
 ; hand using a binary search of the test space.
 
 
-start:
-  0113 2a - ld	hl,(6)
-  0116 f9 - ld	sp,hl
-  0117 11 - ld	de,msg1 ; 1dda
-  011a 0e - ld	c,9
-  011c cd - call	bdos ; 1dce
+start:	ld	hl,(6)
+	ld	sp,hl
+	ld	de,msg1
+	ld	c,9
+	call	bdos
 
 	ld	hl,tests	; first test case
 loop:	ld	a,(hl)		; end of list ?
@@ -1192,12 +1191,11 @@ ph11:	add	a,'0'
 	pop	af
 	ret
 
-bdos:
-  1dce f5 - push	af
-	1dcf c5 - push	bc
-	1dd0 d5 - push	de
-	1dd1 e5 - push	hl
-	1dd2 cd - call	5
+bdos	push	af
+	push	bc
+	push	de
+	push	hl
+	call	5
 	pop	hl
 	pop	de
 	pop	bc

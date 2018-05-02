@@ -15,6 +15,10 @@ int main(int argc, const char * argv[]) {
 
   state_t *state = calloc(1, sizeof(state_t));
   state->memory = calloc(1, RAM_SIZE);
+  state->r_af = 0;
+  state->r_bc = 0;
+  state->r_de = 0;
+  state->r_hl = 0;
   state->r_sp = 0x0000;
   state->r_pc = rom_offset;
   

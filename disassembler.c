@@ -13,6 +13,7 @@ void decode_ed(state_t *state) {
     case 0x73: printf("73 ld (%04x), sp", *((uint16_t *)(&code[2]))); break;
     case 0x7b: printf("7b ld sp, (%04x)", *((uint16_t *)(&code[2]))); break;
     case 0xa0: printf("a0 ldi"); break;
+    case 0xa9: printf("cpd"); break;
     case 0xb0: printf("b0 ldir"); break;
     default: printf("disassm: unimplemented %02x %02x\n", code[0], code[1]); exit(EXIT_SUCCESS); break;
     }
@@ -30,6 +31,14 @@ void decode_fd(state_t *state) {
     case 0xe9: printf("jp (iy)"); break;
     default: printf("disassm: unimplemented %02x %02x\n", code[0], code[1]); exit(EXIT_SUCCESS); break;
     }
+}
+
+void decode_cb(state_t *state) {
+    uint8_t *code = &state->memory[state->r_pc];
+    switch(code[1]) {
+    case 0x58: printf("bit 3, b"); break;
+    default: printf("disassm: unimplemented %02x %02x\n", code[0], code[1]); exit(EXIT_SUCCESS); break;
+    }    
 }
 
 void decode_dd(state_t *state) {
@@ -212,6 +221,7 @@ void disassemble_op(state_t *state) {
     case 0xc8: printf("ret z"); break;
     case 0xc9: printf("ret"); break;
     case 0xca: printf("jp z, %04x", *((uint16_t *)(&code[1]))); break;
+    case 0xcb: decode_cb(state); break;
     case 0xcc: printf("call z, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xcd: printf("call %04x", *((uint16_t *)(&code[1]))); break;
 

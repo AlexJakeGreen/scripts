@@ -7,9 +7,9 @@ typedef struct {
     uint8_t c:1; // carry bit0
     uint8_t n:1; // add/substract
     uint8_t pv:1; // parity/overflow
-    uint8_t pad3:1; // the 3rd bit of the last 8-bit instruction that altered flags
+    uint8_t f3:1; // the 3rd bit of the last 8-bit instruction that altered flags
     uint8_t h:1; // half carry
-    uint8_t pad5:1; // the 5th bit of the last 8-bit instruction that altered flags
+    uint8_t f5:1; // the 5th bit of the last 8-bit instruction that altered flags
     uint8_t z:1; // zero
     uint8_t s:1; // sign
 } condition_codes_t;

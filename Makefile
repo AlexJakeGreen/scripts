@@ -1,9 +1,10 @@
 all:
 	mkdir -p ./bin
-	${CC} main.c emulator.c utils.c disassembler.c cpm.c -o ./bin/emul -Wall
+	${CC} main.c emulator.c utils.c disassembler.c cpm.c -o ./bin/emul -Wall -O2
+	${CC} test.c emulator.c utils.c disassembler.c cpm.c -o ./bin/test -Wall -O2 -DENABLE_DISASM
 
 test: all
-	./bin/emul ./tests/zexdoc.com | tee tests.log
+	./bin/test
 
 #./bin/emul ./test.com 0x100
 
