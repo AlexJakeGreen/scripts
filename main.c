@@ -23,6 +23,18 @@ int main(int argc, const char * argv[]) {
   state->r_pc = rom_offset;
   
   read_rom_file(state, argv[1], rom_offset);
+
+  /* Patch the memory of the program. Reset at 0x0000 is trapped by an
+   * OUT which will stop emulation. CP/M bdos call 5 is trapped by an IN.
+   * See Z80_INPUT_BYTE() and Z80_OUTPUT_BYTE() definitions in z80user.h.
+   */
+  state->memory[0] = 0xd3;       /* OUT N, A */
+  state->memory[1] = 0x00;
+  
+  state->memory[5] = 0xdb;       /* IN A, N */
+  state->memory[6] = 0x00;
+  state->memory[7] = 0xc9;       /* RET */
+        
   printf("=====================\n");  
   int done = 0;
   

@@ -59,14 +59,6 @@ void add8(state_t *state, uint8_t data) {
             state->r_pc += 1;
 }
 
-void add16(state_t *state, uint16_t *lft, uint16_t *rgt) {
-            uint32_t res = *lft + *rgt;
-            state->flags.h = (((*lft & 0xf) + (*rgt & 0xf)) & 0x10) > 1;
-            *lft = res & 0xffff;
-            state->flags.c = (res >> 16) & 0x1;
-            state->flags.n = 0;
-            state->r_pc += 1;
-}
 
 void and8(state_t *state, uint8_t *r) {
     state->r_a = state->r_a & *r;
@@ -92,6 +84,8 @@ void cp8(state_t *state, uint8_t data) {
     uint8_t sign2 = data & 0x80;
     uint8_t sign3 = res & 0x80;
     state->flags.pv = (sign1 != sign2 && sign3 != sign1); 
+    state->flags.f3 = (data & 0b0001000) >> 3;
+    state->flags.f5 = (data & 0b0100000) >> 5;
     state->r_pc += 1;
 }
 
@@ -136,13 +130,9 @@ void emul_unimplemented_op(uint8_t code) {
     exit(EXIT_FAILURE);
 }
 
-void emulate_op_ed(state_t * state) {
-    uint8_t *code = &state->memory[state->r_pc];
-    switch(code[1]) {
-    case 0x42: // sbc hl, bc
-        {
+void sbc16_hl(state_t *state, uint16_t val) {
             uint32_t total = state->r_hl;
-            uint32_t value = state->r_bc + state->flags.c;
+            uint32_t value = val + state->flags.c;
             state->flags.h = ((((total & 0x0fff) - (value & 0x0fff)) & 0x1000) != 0); // TODO
             total -= value;
             state->flags.c = ((total & 0x10000) != 0);
@@ -154,17 +144,112 @@ void emulate_op_ed(state_t * state) {
             state->flags.s = ((total & 0x8000) != 0);
             state->flags.z = (total == 0);
             state->flags.n = 1;
+            state->r_hl = total & 0xffff;
+            state->flags.f3 = ((state->r_hl >> 8) & 0b0001000) >> 3;
+            state->flags.f5 = ((state->r_hl >> 8) & 0b0100000) >> 5;
+}
+
+void emulate_op_ed(state_t * state) {
+    uint8_t *code = &state->memory[state->r_pc];
+    switch(code[1]) {
+    case 0x42: sbc16_hl(state, state->r_bc); state->r_pc += 2; break; // sbc hl, bc
+    case 0x4a: // adc hl, bc
+        {
+            uint32_t total = state->r_hl;
+            uint32_t value = state->r_bc + state->flags.c;
+            state->flags.h = ((((total & 0x0fff) + (value & 0x0fff)) & 0x1000) != 0); // TODO
+            total += value;
+            state->flags.c = ((total & 0x10000) != 0);
+
+            uint32_t sign1 = state->r_hl & 0x8000;
+            uint32_t sign2 = value & 0x8000;
+            uint32_t sign3 = total & 0x8000;
+            state->flags.pv = (sign1 == sign2 && sign3 != sign1);
+            state->flags.s = ((total & 0x8000) != 0);
+            state->flags.z = (total == 0);
+            state->flags.n = 0;
             state->r_h = (total >> 8) & 0xff;
             state->r_l = total & 0xff;
+            state->flags.f3 = (state->r_h & 0b0001000) >> 3;
+            state->flags.f5 = (state->r_h & 0b0100000) >> 5;
             state->r_pc += 2;
         }
         break;
+    case 0x52: sbc16_hl(state, state->r_de); state->r_pc += 2; break; // sbc hl, de
+    case 0x5a: // adc hl, de
+        {
+            uint32_t total = state->r_hl;
+            uint32_t value = state->r_de + state->flags.c;
+            state->flags.h = ((((total & 0x0fff) + (value & 0x0fff)) & 0x1000) != 0); // TODO
+            total += value;
+            state->flags.c = ((total & 0x10000) != 0);
+
+            uint32_t sign1 = state->r_hl & 0x8000;
+            uint32_t sign2 = value & 0x8000;
+            uint32_t sign3 = total & 0x8000;
+            state->flags.pv = (sign1 == sign2 && sign3 != sign1);
+            state->flags.s = ((total & 0x8000) != 0);
+            state->flags.z = (total == 0);
+            state->flags.n = 0;
+            state->r_h = (total >> 8) & 0xff;
+            state->r_l = total & 0xff;
+            state->flags.f3 = (state->r_h & 0b0001000) >> 3;
+            state->flags.f5 = (state->r_h & 0b0100000) >> 5;
+            state->r_pc += 2;
+        }
+        break;
+    case 0x62: sbc16_hl(state, state->r_hl); state->r_pc += 2; break; // sbc hl, hl
+    case 0x6a: // adc hl, hl
+        {
+            uint32_t total = state->r_hl;
+            uint32_t value = state->r_hl + state->flags.c;
+            state->flags.h = ((((total & 0x0fff) + (value & 0x0fff)) & 0x1000) != 0); // TODO
+            total += value;
+            state->flags.c = ((total & 0x10000) != 0);
+
+            uint32_t sign1 = state->r_hl & 0x8000;
+            uint32_t sign2 = value & 0x8000;
+            uint32_t sign3 = total & 0x8000;
+            state->flags.pv = (sign1 == sign2 && sign3 != sign1);
+            state->flags.s = ((total & 0x8000) != 0);
+            state->flags.z = (total == 0);
+            state->flags.n = 0;
+            state->r_h = (total >> 8) & 0xff;
+            state->r_l = total & 0xff;
+            state->flags.f3 = (state->r_h & 0b0001000) >> 3;
+            state->flags.f5 = (state->r_h & 0b0100000) >> 5;
+            state->r_pc += 2;
+        }
+        break;
+    case 0x72: sbc16_hl(state, state->r_sp); state->r_pc += 2; break; // sbc hl, sp
     case 0x73: // ld (**), sp
         { 
             uint16_t addr = *((uint16_t *)(&code[2]));
             state->memory[addr] = state->r_spl;
             state->memory[addr+1] = state->r_sph;
             state->r_pc += 4;
+        }
+        break;
+    case 0x7a: // adc hl, sp
+        {
+            uint32_t total = state->r_hl;
+            uint32_t value = state->r_sp + state->flags.c;
+            state->flags.h = ((((total & 0x0fff) + (value & 0x0fff)) & 0x1000) != 0); // TODO
+            total += value;
+            state->flags.c = ((total & 0x10000) != 0);
+
+            uint32_t sign1 = state->r_hl & 0x8000;
+            uint32_t sign2 = value & 0x8000;
+            uint32_t sign3 = total & 0x8000;
+            state->flags.pv = (sign1 == sign2 && sign3 != sign1);
+            state->flags.s = ((total & 0x8000) != 0);
+            state->flags.z = (total == 0);
+            state->flags.n = 0;
+            state->r_h = (total >> 8) & 0xff;
+            state->r_l = total & 0xff;
+            state->flags.f3 = (state->r_h & 0b0001000) >> 3;
+            state->flags.f5 = (state->r_h & 0b0100000) >> 5;
+            state->r_pc += 2;
         }
         break;
     case 0x7b: // ld sp, (**)
@@ -222,6 +307,7 @@ void emulate_op_ed(state_t * state) {
     default:
         {
             printf("\nemul: unimplemented instruction: %02x %02x\n", code[0], code[1]);
+            print_state(state);
             exit(EXIT_FAILURE);
         }
         break;
@@ -241,8 +327,38 @@ void emulate_op_fd(state_t *state) {
             state->r_pc += 2;
         }
         break;
+    case 0x19: // add iy, de
+        {
+            uint32_t res = state->r_iy + state->r_de;
+            state->flags.h = (((state->r_iy & 0xf) + (state->r_de & 0xf)) & 0x10) > 1;
+            state->r_iy = res & 0xffff;
+            state->flags.c = (res >> 16) & 0x1;
+            state->flags.n = 0;
+            state->r_pc += 2;
+        }
+        break;
     case 0x21: state->r_iy = *((uint16_t *)(&code[2])); state->r_pc += 4; break; // ld iy, **
     case 0x23: state->r_iy++; state->r_pc += 2; break;
+    case 0x29: // add iy, iy
+        {
+            uint32_t res = state->r_iy + state->r_iy;
+            state->flags.h = (((state->r_iy & 0xf) + (state->r_iy & 0xf)) & 0x10) > 1;
+            state->r_iy = res & 0xffff;
+            state->flags.c = (res >> 16) & 0x1;
+            state->flags.n = 0;
+            state->r_pc += 2;
+        }
+        break;
+    case 0x39: // add iy, sp
+        {
+            uint32_t res = state->r_iy + state->r_sp;
+            state->flags.h = (((state->r_iy & 0xf) + (state->r_sp & 0xf)) & 0x10) > 1;
+            state->r_iy = res & 0xffff;
+            state->flags.c = (res >> 16) & 0x1;
+            state->flags.n = 0;
+            state->r_pc += 2;
+        }
+        break;
     case 0x7e: // ld a, (ix + *)
       {
         int8_t c = code[2];
@@ -331,8 +447,38 @@ void emulate_op_dd(state_t *state) {
             state->r_pc += 2;
         }
         break;
+    case 0x19: // add ix, de
+        {
+            uint32_t res = state->r_ix + state->r_de;
+            state->flags.h = (((state->r_ix & 0xf) + (state->r_de & 0xf)) & 0x10) > 1;
+            state->r_ix = res & 0xffff;
+            state->flags.c = (res >> 16) & 0x1;
+            state->flags.n = 0;
+            state->r_pc += 2;
+        }
+        break;
     case 0x21: state->r_ix = *((uint16_t *)(&code[2])); state->r_pc += 4; break; // ld ix, **
     case 0x23: state->r_ix++; state->r_pc += 2; break;
+    case 0x29: // add ix, ix
+        {
+            uint32_t res = state->r_ix + state->r_ix;
+            state->flags.h = (((state->r_ix & 0xf) + (state->r_ix & 0xf)) & 0x10) > 1;
+            state->r_ix = res & 0xffff;
+            state->flags.c = (res >> 16) & 0x1;
+            state->flags.n = 0;
+            state->r_pc += 2;
+        }
+        break;
+    case 0x39: // add ix, sp
+        {
+            uint32_t res = state->r_ix + state->r_sp;
+            state->flags.h = (((state->r_ix & 0xf) + (state->r_sp & 0xf)) & 0x10) > 1;
+            state->r_ix = res & 0xffff;
+            state->flags.c = (res >> 16) & 0x1;
+            state->flags.n = 0;
+            state->r_pc += 2;
+        }
+        break;
     case 0x7e: // ld a, (ix + *)
       {
         int8_t c = code[2];
@@ -343,6 +489,7 @@ void emulate_op_dd(state_t *state) {
     case 0x84: add8(state, state->r_ixh); state->r_pc++; break; // add ixh
     case 0x86: add8(state, state->memory[(uint16_t)(state->r_ix + code[2])]); state->r_pc += 2; break; // add (ix + *)
     case 0xcb: emulate_op_dd_cb(state); break; // IX bit instructions
+
     case 0xe1: state->r_ix = stack_get16(state); state->r_pc += 2; break;
     case 0xe5: stack_put16(state, state->r_ix); state->r_pc += 2; break;
     case 0xe9: // jp (ix) ????
@@ -386,9 +533,11 @@ void inc8(state_t *state, uint8_t *r) {
 int emulate_op(state_t *state) {
     uint8_t *code = &state->memory[state->r_pc];
 
-#ifdef ENABLE_DISASM
-    disassemble_op(state);
-#endif
+    /* printf("%04x %02x %04x %04x %04x %04x %04x |%02x|  ", */
+    /*        state->r_pc, code[0], state->r_af, state->r_bc, state->r_de, state->r_hl, */
+    /*        state->r_sp, state->memory[0x1d89]); */
+    /* disassemble_op(state); */
+
     
     switch(*code) {
     case 0x00: state->r_pc++; break; // nop
@@ -420,6 +569,8 @@ int emulate_op(state_t *state) {
                 state->flags.c = 0;
             state->flags.h = 0;
             state->r_pc++;
+            state->flags.f3 = (state->r_a & 0b0001000) >> 3;
+            state->flags.f5 = (state->r_a & 0b0100000) >> 5;
         }
         break;
     case 0x08: // ex af, af'
@@ -507,7 +658,7 @@ int emulate_op(state_t *state) {
             uint16_t h = state->r_h + state->r_d;
             uint32_t res = l+(h<<8);
             state->flags.f3 = (h & 0b0001000) >> 3;
-            state->flags.f5 = (l & 0b0100000) >> 5;
+            state->flags.f5 = (h & 0b0100000) >> 5;
             state->flags.h = (((state->r_h & 0xf) + (state->r_d & 0xf)) & 0x10) > 1;
             state->r_hl = res & 0xffff;
             state->flags.c = (res >> 16) & 0x1;
@@ -533,7 +684,14 @@ int emulate_op(state_t *state) {
             state->r_pc += 3;
         }
         break;
-    case 0x22: state->memory[*((uint16_t *)(&code[1]))] = state->r_hl; state->r_pc += 3; break; // ld (**), hl
+    case 0x22: // ld (**), hl
+        {
+            uint16_t addr = *((uint16_t *)(&code[1]));
+            state->memory[addr] = state->r_l;
+            state->memory[addr+1] = state->r_h;
+            state->r_pc += 3;
+        }
+        break;
     case 0x23: state->r_hl++; state->r_pc++; break; // inc hl
     case 0x24: inc8(state, &state->r_h); break; // inc h
     case 0x25: dec8(state, &state->r_h); break; // dec h
@@ -642,6 +800,16 @@ int emulate_op(state_t *state) {
           state->r_pc += 2;
       }
       break;
+    case 0x39: // add hl, sp
+        {
+            uint32_t res = state->r_hl + state->r_sp;
+            state->flags.h = (((state->r_hl & 0xf) + (state->r_sp & 0xf)) & 0x10) > 1;
+            state->r_hl = res & 0xffff;
+            state->flags.c = (res >> 16) & 0x1;
+            state->flags.n = 0;
+            state->r_pc += 1;
+        }
+        break;
     case 0x3a: // ld a, (**)
         {
             state->r_a = state->memory[*((uint16_t *)(&code[1]))];
@@ -779,6 +947,25 @@ int emulate_op(state_t *state) {
             }
         }
         break;
+    case 0xce: // adc a, *
+        {
+            uint16_t total = state->r_a;
+            uint16_t value = code[1] + state->flags.c;
+            state->flags.h = ((((total & 0x0f) + (value & 0x0f)) & 0x10) != 0); // TODO
+            total += value;
+            state->flags.c = ((total & 0x100) != 0);
+            state->flags.s = ((total & 0x80) != 0);
+            state->flags.z = ((total & 0xff) == 0);
+            state->flags.n = 0;
+
+            uint32_t sign1 = state->r_hl & 0x8000;
+            uint32_t sign2 = value & 0x8000;
+            uint32_t sign3 = total & 0x8000;
+            state->flags.pv = (sign1 == sign2 && sign3 != sign1);
+            state->r_a = total;
+            state->r_pc += 2;
+        }
+        break;
     case 0xd0: // ret nc
       {
         if (state->flags.c != 1)
@@ -897,18 +1084,7 @@ int emulate_op(state_t *state) {
             state->r_pc += 1;
         }
         break;
-    case 0xe6: // and *
-        {
-            state->r_a &= code[1];
-            state->flags.c = 0;
-            state->flags.n = 0;
-            state->flags.h = 1;
-            state->flags.pv = parity8(state->r_a);
-            state->flags.z = (state->r_a == 0);
-            state->flags.s = ((state->r_a & 0x80) == 0x80);
-            state->r_pc += 2;
-        }
-        break;
+    case 0xe6: and8(state, &code[1]); state->r_pc++; break; // and *
     case 0xe8: // ret pe
       {
         if (state->flags.pv == 1)

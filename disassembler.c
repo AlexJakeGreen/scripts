@@ -10,7 +10,14 @@ void decode_ed(state_t *state) {
     uint8_t *code = &state->memory[state->r_pc];
     switch(code[1]) {
     case 0x42: printf("42 sbc hl, bc"); break;
+    case 0x4a: printf("4a adc hl, bc"); break;
+    case 0x52: printf("52 sbc hl, de"); break;
+    case 0x5a: printf("5a adc hl, de"); break;
+    case 0x62: printf("62 sbc hl, hl"); break;
+    case 0x6a: printf("6a adc hl, hl"); break;
+    case 0x72: printf("72 sbc hl, sp"); break;
     case 0x73: printf("73 ld (%04x), sp", *((uint16_t *)(&code[2]))); break;
+    case 0x7a: printf("7a adc hl, sp"); break;
     case 0x7b: printf("7b ld sp, (%04x)", *((uint16_t *)(&code[2]))); break;
     case 0xa0: printf("a0 ldi"); break;
     case 0xa9: printf("cpd"); break;

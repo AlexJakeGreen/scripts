@@ -1,2 +1,3 @@
 bin/emul
+bin/test
 tests.log
