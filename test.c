@@ -10,15 +10,15 @@ int main(int argc, const char * argv[]) {
         printf("Usage: ./test <hex_code>\n");
         exit(EXIT_FAILURE);
     }
-
+/*
     printf("===================\n");
-    
+*/
     FILE *fp;
     char *line = NULL;
     size_t len = 0;
 
     char filename[255];
-    strcpy(filename, "tests/opcodes/");
+    strcpy(filename, "tests/tests_in/");
     strcat(filename, argv[1]);
     
     fp = fopen(filename, "r");
@@ -48,12 +48,13 @@ int main(int argc, const char * argv[]) {
     state->_r_af = af_; state->_r_bc = bc_; state->_r_de = de_; state->_r_hl = hl_;
     state->r_ix = ix; state->r_iy = iy; state->r_sp = sp; state->r_pc = pc;
 
+    /*
     printf("%04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x\n",
            state->r_af, state->r_bc, state->r_de, state->r_hl,
            state->_r_af, state->_r_bc, state->_r_de, state->_r_hl,
            state->r_ix, state->r_iy, state->r_sp, state->r_pc);
+    */
 
-    
     // other registers - skip them
     getline(&line, &len, fp);
 
@@ -65,7 +66,7 @@ int main(int argc, const char * argv[]) {
 
     int count = 0;
     for (int i=5; i<(int)strlen(line)-4; i+=3) {
-        
+
         uint8_t code = (((line[i]<97)?line[i]-48:line[i]-87)<<4) + ((line[i+1]<97)?line[i+1]-48:line[i+1]-87);
 
         /* printf("mem[%04x + %02x] = %02x (%c%c)\n", addr, count, code, line[i], line[i+1]); */
@@ -89,11 +90,11 @@ int main(int argc, const char * argv[]) {
             count2++;
         }
     }
-    
-    while (state->r_pc < (addr + count)) {
-        emulate_op(state);
+    int res = 0;
+    while (state->r_pc < (addr + count) && res == 0) {
+        res = emulate_op(state);
     }
-    
+/*
     printf("===================\n");
     printf("%s", opcode);
 
@@ -105,11 +106,14 @@ int main(int argc, const char * argv[]) {
         if (state->memory[i])
             printf("%04x %02x\n", i, state->memory[i]);
     }
-    
+*/
+    if (res == 0) {
     printf("%04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x\n",
            state->r_af, state->r_bc, state->r_de, state->r_hl,
            state->_r_af, state->_r_bc, state->_r_de, state->_r_hl,
            state->r_ix, state->r_iy, state->r_sp, state->r_pc);
+    }
+
 
     uint8_t n = state->r_f;
     char str[9] = "00000000";
@@ -124,7 +128,7 @@ int main(int argc, const char * argv[]) {
         n >>=1;
     }
     printf("Flags: %s\n       sz h pnc\n", str);
-    
+
     fclose(fp);
     if (line)
         free(line);

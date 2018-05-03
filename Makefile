@@ -1,7 +1,7 @@
 all:
 	mkdir -p ./bin
-	${CC} main.c emulator.c utils.c disassembler.c cpm.c -o ./bin/emul -Wall -O2
-	${CC} test.c emulator.c utils.c disassembler.c cpm.c -o ./bin/test -Wall -O2 -DENABLE_DISASM
+	${CC} main.c emulator.c utils.c disassembler.c cpm.c log.c -o ./bin/emul -Wall -O2
+	${CC} test.c emulator.c utils.c disassembler.c cpm.c log.c -o ./bin/test -Wall -O2 -DENABLE_DISASM
 
 test: all
 	./bin/test

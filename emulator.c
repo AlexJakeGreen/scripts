@@ -41,64 +41,70 @@ void print_state(state_t *state) {
     print_stack(state);
 }
 
-void add8(state_t *state, uint8_t data) {
-            if (((state->r_a ^ data) & 0x80) == 0 
-                && ((1 ^ (state->r_a + data)) & 0x80) != 0) 
-                state->flags.pv = 1;
-            else
-                state->flags.pv = 0;
-            if ((state->r_a + data) > 0xffff)
-                state->flags.c = 1;
-            else
-                state->flags.c = 0;
-            state->flags.h = (((state->r_a & 0xf) + (data & 0xf)) & 0x10) > 1;
-            state->r_a += data;
-            state->flags.n = 0;
-            state->flags.z = (state->r_a == 0);
-            state->flags.s = ((state->r_a & 0x80) == 0x80);
-            state->r_pc += 1;
+void add8(state_t *state, uint8_t val) {
+  uint16_t total = state->r_a;
+  state->flags.h = ((((total & 0xf) + (val & 0xf)) & 0x10) != 0);
+
+  total += val;
+  state->flags.c = ((total & 0x100) != 0);
+  state->flags.s = ((total & 0x80) != 0);
+  state->flags.z = ((total & 0xff) == 0);
+  state->flags.n = 0;
+
+  uint16_t sign1 = state->r_a & 0x80;
+  uint16_t sign2 = val & 0x80;
+  uint16_t sign3 = total & 0x80;
+  state->flags.pv = (sign1 == sign2 && sign3 != sign1);
+  state->flags.f3 = (total & 0b0001000) >> 3;
+  state->flags.f5 = (total & 0b0100000) >> 5;
+
+  state->r_a = total & 0xff;
+  state->r_pc++;
 }
 
 void adc8(state_t *state, uint8_t val) {
   uint16_t total = state->r_a;
   uint16_t value = val + state->flags.c;
-  state->flags.h = ((((total & 0x0f) + (value & 0x0f)) & 0x10) != 0); // TODO
+  state->flags.h = ((((total & 0xf) + (value & 0xf)) & 0x10) != 0);
   total += value;
   state->flags.c = ((total & 0x100) != 0);
   state->flags.s = ((total & 0x80) != 0);
   state->flags.z = ((total & 0xff) == 0);
   state->flags.n = 0;
 
-  uint32_t sign1 = state->r_hl & 0x8000;
-  uint32_t sign2 = value & 0x8000;
-  uint32_t sign3 = total & 0x8000;
+  uint16_t sign1 = state->r_a & 0x80;
+  uint16_t sign2 = value & 0x80;
+  uint16_t sign3 = total & 0x80;
   state->flags.pv = (sign1 == sign2 && sign3 != sign1);
-  state->r_a = total;
+  state->flags.f3 = (total & 0b0001000) >> 3;
+  state->flags.f5 = (total & 0b0100000) >> 5;
+  state->r_a = total & 0xff;
   state->r_pc++;
 }
 
 void sub8(state_t *state, uint8_t val) {
-  if (((state->r_a ^ val) & 0x80) == 0 
-      && ((1 ^ (state->r_a - val)) & 0x80) != 0) 
-    state->flags.pv = 1;
-  else
-    state->flags.pv = 0;
-  if (state->r_a < val)
-    state->flags.c = 1;
-  else
-    state->flags.c = 0;
-  state->flags.h = (((state->r_a & 0xf) - (val & 0xf)) & 0x10) > 1;
-  state->r_a -= val;
-  state->flags.n = 0;
-  state->flags.z = (state->r_a == 0);
-  state->flags.s = ((state->r_a & 0x80) == 0x80);
+  uint16_t total = state->r_a;
+  state->flags.h = ((((total & 0xf) - (val & 0xf)) & 0x10) != 0);
+  total -= val;
+  state->flags.c = ((total & 0x100) != 0);
+  state->flags.s = ((total & 0x80) != 0);
+  state->flags.z = (total == 0);
+  state->flags.n = 1;
+
+  uint16_t sign1 = state->r_a & 0x80;
+  uint16_t sign2 = val & 0x80;
+  uint16_t sign3 = total & 0x80;
+  state->flags.pv = (sign1 != sign2 && sign3 != sign1);
+  state->r_a = total & 0xff;
+  state->flags.f3 = (state->r_a & 0b0001000) >> 3;
+  state->flags.f5 = (state->r_a & 0b0100000) >> 5;
   state->r_pc++;
 }
 
 void sbc8(state_t *state, uint8_t val) {
   uint16_t total = state->r_a;
   uint16_t value = val + state->flags.c;
-  state->flags.h = ((((total & 0x0f) - (value & 0x0f)) & 0x10) != 0); // TODO
+  state->flags.h = ((((total & 0x0f) - (value & 0x0f)) & 0x10) != 0);
   total -= value;
   state->flags.c = ((total & 0x100) != 0);
 
@@ -183,7 +189,6 @@ uint16_t stack_get16(state_t *state) {
 
 void emul_unimplemented_op(uint8_t code) {
     printf("\nemul: unimplemented instruction: %02x\n", code);
-    exit(EXIT_FAILURE);
 }
 
 void sbc16_hl(state_t *state, uint16_t val) {
@@ -471,10 +476,15 @@ void emulate_op_cb(state_t *state) {
     switch(code[1]) {
     case 0x40: // bit 0, b
         {
-            state->flags.n = 0;
-            state->flags.h = 1;
-            state->flags.z = (1 == (state->r_b & 0x1));
-            state->r_pc += 2;
+          // BIT n,r               *Z513*0-  PV as Z, S set only if n=7 and b7 of r set
+          state->flags.n = 0;
+          state->flags.h = 1;
+          state->flags.z = (0 == (state->r_b & 0x1));
+          state->flags.pv = state->flags.z;
+          state->flags.f3 = (state->r_b & 0b0001000) >> 3;
+          state->flags.f5 = (state->r_b & 0b0100000) >> 5;
+          state->flags.s = 0;
+          state->r_pc += 2;
         }
         break;
     case 0x58: // bit 3, b
@@ -518,17 +528,29 @@ void emulate_op_dd_cb(state_t *state) {
     }
 }
 
+void add_dd16(state_t *state, uint16_t *r1, uint16_t *r2) {
+  uint32_t res = state->r_ix + state->r_bc;
+  state->flags.h = ((((*r1 >> 8) & 0xf) + ((*r2 >> 8) & 0xf)) & 0x10) > 1;
+  *r1 = res & 0xffff;
+  state->flags.c = (res >> 16) & 0x1;
+  state->flags.f3 = ((*r1 >> 8) & 0b0001000) >> 3;
+  state->flags.f5 = ((*r1 >> 8) & 0b0100000) >> 5;
+  state->flags.n = 0;
+}
+
 void emulate_op_dd(state_t *state) {
     uint8_t *code = &state->memory[state->r_pc];
     switch(code[1]) {
     case 0x09: // add ix, bc
         {
-            uint32_t res = state->r_ix + state->r_bc;
-            state->flags.h = (((state->r_ix & 0xf) + (state->r_bc & 0xf)) & 0x10) > 1;
-            state->r_ix = res & 0xffff;
-            state->flags.c = (res >> 16) & 0x1;
-            state->flags.n = 0;
-            state->r_pc += 2;
+          uint32_t res = state->r_ix + state->r_bc;
+          state->flags.h = (((state->r_ixh & 0xf) + ((state->r_b >> 8) & 0xf)) & 0x10) > 1;
+          state->r_ix = res & 0xffff;
+          state->flags.c = (res >> 16) & 0x1;
+          state->flags.f3 = (state->r_ixh & 0b0001000) >> 3;
+          state->flags.f5 = (state->r_ixh & 0b0100000) >> 5;
+          state->flags.n = 0;
+          state->r_pc += 2;
         }
         break;
     case 0x19: // add ix, de
@@ -647,7 +669,6 @@ int emulate_op(state_t *state) {
     /*        state->r_pc, code[0], state->r_af, state->r_bc, state->r_de, state->r_hl, */
     /*        state->r_sp, state->memory[0x1d89]); */
     /* disassemble_op(state); */
-
     
     switch(*code) {
     case 0x00: state->r_pc++; break; // nop
@@ -698,6 +719,8 @@ int emulate_op(state_t *state) {
             state->r_hl = res & 0xffff;
             state->flags.c = (res >> 16) & 0x1;
             state->flags.n = 0;
+            state->flags.f3 = (state->r_h & 0b0001000) >> 3;
+            state->flags.f5 = (state->r_h & 0b0100000) >> 5;
             state->r_pc += 1;
         }
         break;
@@ -920,17 +943,20 @@ int emulate_op(state_t *state) {
             state->r_pc += 1;
         }
         break;
-    case 0x3a: // ld a, (**)
-        {
-            state->r_a = state->memory[*((uint16_t *)(&code[1]))];
-            state->r_pc += 3;
-        }
-        break;
+    case 0x3a: state->r_a = state->memory[*((uint16_t *)(&code[1]))]; state->r_pc += 3; break; // ld a, (**)
     case 0x3b: state->r_sp--; state->r_pc++; break; // dec sp
     case 0x3c: inc8(state, &state->r_a); break; // inc a
     case 0x3e: state->r_a = code[1]; state->r_pc += 2; break; // ld a, *
-    case 0x3f: state->flags.c = !state->flags.c; state->r_pc++; break; // ccf
-        
+    case 0x3f: // ccf
+      {
+        state->flags.h = state->flags.c;
+        state->flags.c = !state->flags.c;
+        state->flags.n = 0;
+        state->flags.f3 = (state->r_a & 0b0001000) >> 3;
+        state->flags.f5 = (state->r_a & 0b0100000) >> 5;
+        state->r_pc++;
+      }
+      break;  
     case 0x40: state->r_b = state->r_b; state->r_pc++; break; // ld b, b
     case 0x41: state->r_b = state->r_c; state->r_pc++; break; // ld b, c
     case 0x42: state->r_b = state->r_d; state->r_pc++; break; // ld b, d
@@ -1043,7 +1069,7 @@ int emulate_op(state_t *state) {
           state->r_pc++;
       }
       break;
-    case 0xc1: state->r_bc = stack_get16(state); state->r_pc += 1; break; // pop bc
+    case 0xc1: state->r_bc = stack_get16(state); state->r_pc++; break; // pop bc
     case 0xc2: // jp nz, **
         {
             if (state->flags.z != 1)
@@ -1065,10 +1091,10 @@ int emulate_op(state_t *state) {
     case 0xc5: // push bc
         {
             stack_put16(state, state->r_bc);
-            state->r_pc += 1;
+            state->r_pc++;
         }
         break;
-    case 0xc6: add8(state, code[1]); state->r_pc++; break; // add a, *
+    case 0xc6: add8(state, code[1]); state->r_pc++; break;
     case 0xc8: // ret z
       {
         if (state->flags.z == 1)
@@ -1111,25 +1137,7 @@ int emulate_op(state_t *state) {
             }
         }
         break;
-    case 0xce: // adc a, *
-        {
-            uint16_t total = state->r_a;
-            uint16_t value = code[1] + state->flags.c;
-            state->flags.h = ((((total & 0x0f) + (value & 0x0f)) & 0x10) != 0); // TODO
-            total += value;
-            state->flags.c = ((total & 0x100) != 0);
-            state->flags.s = ((total & 0x80) != 0);
-            state->flags.z = ((total & 0xff) == 0);
-            state->flags.n = 0;
-
-            uint32_t sign1 = state->r_hl & 0x8000;
-            uint32_t sign2 = value & 0x8000;
-            uint32_t sign3 = total & 0x8000;
-            state->flags.pv = (sign1 == sign2 && sign3 != sign1);
-            state->r_a = total;
-            state->r_pc += 2;
-        }
-        break;
+    case 0xce: adc8(state, code[1]); state->r_pc++; break; // adc a, *
     case 0xd0: // ret nc
       {
         if (state->flags.c != 1)
@@ -1165,29 +1173,10 @@ int emulate_op(state_t *state) {
     case 0xd5: // push de
         {
             stack_put16(state, state->r_de);
-            state->r_pc += 1;
+            state->r_pc++;
         }
         break;
-    case 0xd6: // sub *
-      {
-        uint8_t data = code[1];
-        if (((state->r_a ^ data) & 0x80) == 0 
-            && ((1 ^ (state->r_a - data)) & 0x80) != 0) 
-          state->flags.pv = 1;
-        else
-          state->flags.pv = 0;
-        if (state->r_a < data)
-          state->flags.c = 1;
-        else
-          state->flags.c = 0;
-        state->flags.h = (((state->r_a & 0xf) - (data & 0xf)) & 0x10) > 1;
-        state->r_a -= data;
-        state->flags.n = 0;
-        state->flags.z = (state->r_a == 0);
-        state->flags.s = ((state->r_a & 0x80) == 0x80);
-        state->r_pc += 2;
-      }
-      break;
+    case 0xd6: sub8(state, code[1]); state->r_pc++; break;
     case 0xd8: // ret c
       {
         if (state->flags.c == 1)
@@ -1230,27 +1219,7 @@ int emulate_op(state_t *state) {
         }
         break;
     case 0xdd: emulate_op_dd(state); break;
-    case 0xde: // sbc a, *
-      {
-        uint16_t total = state->r_a;
-        uint16_t value = code[1] + state->flags.c;
-        state->flags.h = ((((total & 0x0f) - (value & 0x0f)) & 0x10) != 0); // TODO
-        total -= value;
-        state->flags.c = ((total & 0x100) != 0);
-
-        uint16_t sign1 = state->r_a & 0x80;
-        uint16_t sign2 = value & 0x80;
-        uint16_t sign3 = total & 0x80;
-        state->flags.pv = (sign1 != sign2 && sign3 != sign1);
-        state->flags.s = ((total & 0x80) != 0);
-        state->flags.z = (total == 0);
-        state->flags.n = 1;
-        state->r_a = total & 0xff;
-        state->flags.f3 = (state->r_a & 0b0001000) >> 3;
-        state->flags.f5 = (state->r_a & 0b0100000) >> 5;
-        state->r_pc += 2;
-      }
-      break;
+    case 0xde: sbc8(state, code[1]); state->r_pc++; break; // sbc a, *
     case 0xe0: // ret po
       {
         if (state->flags.pv != 1)
@@ -1282,12 +1251,7 @@ int emulate_op(state_t *state) {
             }
         }
         break;
-    case 0xe5: // push hl
-        {
-            stack_put16(state, state->r_hl);
-            state->r_pc += 1;
-        }
-        break;
+    case 0xe5: stack_put16(state, state->r_hl); state->r_pc++; break; // push hl
     case 0xe6: and8(state, &code[1]); state->r_pc++; break; // and *
     case 0xe8: // ret pe
       {
@@ -1297,11 +1261,7 @@ int emulate_op(state_t *state) {
           state->r_pc++;
       }
       break;
-    case 0xe9: // jp (hl) ????
-      {
-        state->r_pc = state->r_hl;
-      }
-      break;
+    case 0xe9: state->r_pc = state->r_hl; break; // jp (hl) ????
     case 0xea: // jp pe, **
         {
             if (state->flags.pv == 1)
@@ -1327,11 +1287,7 @@ int emulate_op(state_t *state) {
             }
         }
         break;
-    case 0xed: // extended op
-        {
-            emulate_op_ed(state);
-        }
-        break;
+    case 0xed: emulate_op_ed(state); break; // extended op
     case 0xee: xor8(state, code[1]); state->r_pc++; break; // xor *
     case 0xf0: // ret p
       {
@@ -1341,12 +1297,7 @@ int emulate_op(state_t *state) {
           state->r_pc++;
       }
       break;
-    case 0xf1: // pop af
-        {
-            state->r_af = stack_get16(state);
-            state->r_pc += 1;
-        }
-        break;
+    case 0xf1: state->r_af = stack_get16(state); state->r_pc++; break; // pop af
     case 0xf2: // jp p, **
         {
             if (state->flags.s != 1)
@@ -1368,7 +1319,7 @@ int emulate_op(state_t *state) {
     case 0xf5: // push af
         {
             stack_put16(state, state->r_af);
-            state->r_pc += 1;
+            state->r_pc++;
         }
         break;
     case 0xf6: or8(state, &code[1]); state->r_pc++; break; // or *
@@ -1406,14 +1357,14 @@ int emulate_op(state_t *state) {
         break;
     case 0xfd: emulate_op_fd(state); break;
     case 0xfe: cp8(state, code[1]); state->r_pc++; break; // cp *
-    default: emul_unimplemented_op(*code); break;
+    default: emul_unimplemented_op(*code); return 1; break;
     }
 
     // print_state(state);
     if (state->r_pc == 0x0000) {
         printf("\nREACHED WBOOT - NORMAL EXIT");
         print_state(state);
-        exit(EXIT_SUCCESS);
+        return 1;
     }
 
     

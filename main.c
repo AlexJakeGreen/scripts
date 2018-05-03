@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "emulator.h"
 #include "utils.h"
+#include "log.h"
 
 #define RAM_SIZE 0xffff // 64k RAM
 
@@ -10,6 +11,8 @@ int main(int argc, const char * argv[]) {
     printf("Usage: ./emul rom_file\n");
     exit(EXIT_FAILURE);
   }
+
+  flush_log();
 
   uint16_t rom_offset = 0x0100;
 
@@ -41,6 +44,7 @@ int main(int argc, const char * argv[]) {
   while (done == 0) {
       done = emulate_op(state);
   }
-    
+
+  flush_log();
   return 0;
 }
