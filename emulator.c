@@ -59,6 +59,62 @@ void add8(state_t *state, uint8_t data) {
             state->r_pc += 1;
 }
 
+void adc8(state_t *state, uint8_t val) {
+  uint16_t total = state->r_a;
+  uint16_t value = val + state->flags.c;
+  state->flags.h = ((((total & 0x0f) + (value & 0x0f)) & 0x10) != 0); // TODO
+  total += value;
+  state->flags.c = ((total & 0x100) != 0);
+  state->flags.s = ((total & 0x80) != 0);
+  state->flags.z = ((total & 0xff) == 0);
+  state->flags.n = 0;
+
+  uint32_t sign1 = state->r_hl & 0x8000;
+  uint32_t sign2 = value & 0x8000;
+  uint32_t sign3 = total & 0x8000;
+  state->flags.pv = (sign1 == sign2 && sign3 != sign1);
+  state->r_a = total;
+  state->r_pc++;
+}
+
+void sub8(state_t *state, uint8_t val) {
+  if (((state->r_a ^ val) & 0x80) == 0 
+      && ((1 ^ (state->r_a - val)) & 0x80) != 0) 
+    state->flags.pv = 1;
+  else
+    state->flags.pv = 0;
+  if (state->r_a < val)
+    state->flags.c = 1;
+  else
+    state->flags.c = 0;
+  state->flags.h = (((state->r_a & 0xf) - (val & 0xf)) & 0x10) > 1;
+  state->r_a -= val;
+  state->flags.n = 0;
+  state->flags.z = (state->r_a == 0);
+  state->flags.s = ((state->r_a & 0x80) == 0x80);
+  state->r_pc++;
+}
+
+void sbc8(state_t *state, uint8_t val) {
+  uint16_t total = state->r_a;
+  uint16_t value = val + state->flags.c;
+  state->flags.h = ((((total & 0x0f) - (value & 0x0f)) & 0x10) != 0); // TODO
+  total -= value;
+  state->flags.c = ((total & 0x100) != 0);
+
+  uint16_t sign1 = state->r_a & 0x80;
+  uint16_t sign2 = value & 0x80;
+  uint16_t sign3 = total & 0x80;
+  state->flags.pv = (sign1 != sign2 && sign3 != sign1);
+  state->flags.s = ((total & 0x80) != 0);
+  state->flags.z = (total == 0);
+  state->flags.n = 1;
+  state->r_a = total & 0xff;
+  state->flags.f3 = (state->r_a & 0b0001000) >> 3;
+  state->flags.f5 = (state->r_a & 0b0100000) >> 5;
+  state->r_pc++;
+}
+
 
 void and8(state_t *state, uint8_t *r) {
     state->r_a = state->r_a & *r;
@@ -359,13 +415,41 @@ void emulate_op_fd(state_t *state) {
             state->r_pc += 2;
         }
         break;
-    case 0x7e: // ld a, (ix + *)
+    case 0x7e: // ld a, (iy + *)
       {
         int8_t c = code[2];
         state->r_a = state->memory[state->r_iy + c];
         state->r_pc += 3;
       }
       break;
+    case 0x84: add8(state, state->r_iyh); state->r_pc++; break;
+    case 0x85: add8(state, state->r_iyl); state->r_pc++; break;
+    case 0x86: add8(state, state->memory[(uint16_t)(state->r_iy + code[2])]); state->r_pc += 2; break;
+    case 0x8c: adc8(state, state->r_iyh); state->r_pc++; break;
+    case 0x8d: adc8(state, state->r_iyl); state->r_pc++; break;
+    case 0x8e: adc8(state, state->memory[(uint16_t)(state->r_iy + code[2])]); state->r_pc += 2; break;
+
+    case 0x94: sub8(state, state->r_iyh); state->r_pc++; break;
+    case 0x95: sub8(state, state->r_iyl); state->r_pc++; break;
+    case 0x96: sub8(state, state->memory[(uint16_t)(state->r_iy + code[2])]); state->r_pc += 2; break;
+    case 0x9c: sbc8(state, state->r_iyh); state->r_pc++; break;
+    case 0x9d: sbc8(state, state->r_iyl); state->r_pc++; break;
+    case 0x9e: sbc8(state, state->memory[(uint16_t)(state->r_iy + code[2])]); state->r_pc += 2; break;
+
+    case 0xa4: and8(state, &state->r_iyh); state->r_pc++; break;
+    case 0xa5: and8(state, &state->r_iyl); state->r_pc++; break;
+    case 0xa6: and8(state, &state->memory[(uint16_t)(state->r_iy + code[2])]); state->r_pc += 2; break;
+    case 0xac: xor8(state, state->r_iyh); state->r_pc++; break;
+    case 0xad: xor8(state, state->r_iyl); state->r_pc++; break;
+    case 0xae: xor8(state, state->memory[(uint16_t)(state->r_iy + code[2])]); state->r_pc += 2; break;
+
+    case 0xb4: or8(state, &state->r_iyh); state->r_pc++; break;
+    case 0xb5: or8(state, &state->r_iyl); state->r_pc++; break;
+    case 0xb6: or8(state, &state->memory[(uint16_t)(state->r_iy + code[2])]); state->r_pc += 2; break;
+    case 0xbc: cp8(state, state->r_iyh); state->r_pc++; break;
+    case 0xbd: cp8(state, state->r_iyl); state->r_pc++; break;
+    case 0xbe: cp8(state, state->memory[(uint16_t)(state->r_iy + code[2])]); state->r_pc += 2; break;
+
     case 0xe1: state->r_iy = stack_get16(state); state->r_pc += 2; break;
     case 0xe5: stack_put16(state, state->r_iy); state->r_pc += 2; break;
     case 0xe9: // jp (iy) ????
@@ -487,7 +571,33 @@ void emulate_op_dd(state_t *state) {
       }
       break;
     case 0x84: add8(state, state->r_ixh); state->r_pc++; break; // add ixh
+    case 0x85: add8(state, state->r_ixl); state->r_pc++; break;
     case 0x86: add8(state, state->memory[(uint16_t)(state->r_ix + code[2])]); state->r_pc += 2; break; // add (ix + *)
+    case 0x8c: adc8(state, state->r_ixh); state->r_pc++; break;
+    case 0x8d: adc8(state, state->r_ixl); state->r_pc++; break;
+    case 0x8e: adc8(state, state->memory[(uint16_t)(state->r_ix + code[2])]); state->r_pc += 2; break;
+      
+    case 0x94: sub8(state, state->r_ixh); state->r_pc++; break;
+    case 0x95: sub8(state, state->r_ixl); state->r_pc++; break;
+    case 0x96: sub8(state, state->memory[(uint16_t)(state->r_ix + code[2])]); state->r_pc += 2; break;
+    case 0x9c: sbc8(state, state->r_ixh); state->r_pc++; break;
+    case 0x9d: sbc8(state, state->r_ixl); state->r_pc++; break;
+    case 0x9e: sbc8(state, state->memory[(uint16_t)(state->r_ix + code[2])]); state->r_pc += 2; break;
+
+    case 0xa4: and8(state, &state->r_ixh); state->r_pc++; break;
+    case 0xa5: and8(state, &state->r_ixl); state->r_pc++; break;
+    case 0xa6: and8(state, &state->memory[(uint16_t)(state->r_ix + code[2])]); state->r_pc += 2; break;
+    case 0xac: xor8(state, state->r_ixh); state->r_pc++; break;
+    case 0xad: xor8(state, state->r_ixl); state->r_pc++; break;
+    case 0xae: xor8(state, state->memory[(uint16_t)(state->r_ix + code[2])]); state->r_pc += 2; break;
+
+    case 0xb4: or8(state, &state->r_ixh); state->r_pc++; break;
+    case 0xb5: or8(state, &state->r_ixl); state->r_pc++; break;
+    case 0xb6: or8(state, &state->memory[(uint16_t)(state->r_ix + code[2])]); state->r_pc += 2; break;
+    case 0xbc: cp8(state, state->r_ixh); state->r_pc++; break;
+    case 0xbd: cp8(state, state->r_ixl); state->r_pc++; break;
+    case 0xbe: cp8(state, state->memory[(uint16_t)(state->r_ix + code[2])]); state->r_pc += 2; break;
+      
     case 0xcb: emulate_op_dd_cb(state); break; // IX bit instructions
 
     case 0xe1: state->r_ix = stack_get16(state); state->r_pc += 2; break;
@@ -856,9 +966,49 @@ int emulate_op(state_t *state) {
     case 0x7e: state->r_a = state->memory[state->r_hl]; state->r_pc++; break; // ld a, (hl)
 
     case 0x80: add8(state, state->r_b); break;
+    case 0x81: add8(state, state->r_c); break;
+    case 0x82: add8(state, state->r_d); break;
+    case 0x83: add8(state, state->r_e); break;
+    case 0x84: add8(state, state->r_h); break;
+    case 0x85: add8(state, state->r_l); break;
+    case 0x86: add8(state, state->memory[state->r_hl]); break;
+    case 0x87: add8(state, state->r_a); break;
 
+    case 0x88: adc8(state, state->r_b); break;
+    case 0x89: adc8(state, state->r_c); break;
+    case 0x8a: adc8(state, state->r_d); break;
+    case 0x8b: adc8(state, state->r_e); break;
+    case 0x8c: adc8(state, state->r_h); break;
+    case 0x8d: adc8(state, state->r_l); break;
+    case 0x8e: adc8(state, state->memory[state->r_hl]); break;
+    case 0x8f: adc8(state, state->r_a); break;
+
+    case 0x90: sub8(state, state->r_b); break;
+    case 0x91: sub8(state, state->r_c); break;
+    case 0x92: sub8(state, state->r_d); break;
+    case 0x93: sub8(state, state->r_e); break;
+    case 0x94: sub8(state, state->r_h); break;
+    case 0x95: sub8(state, state->r_l); break;
+    case 0x96: sub8(state, state->memory[state->r_hl]); break;
+    case 0x97: sub8(state, state->r_a); break;
+    case 0x98: sbc8(state, state->r_b); break;
+    case 0x99: sbc8(state, state->r_c); break;
+    case 0x9a: sbc8(state, state->r_d); break;
+    case 0x9b: sbc8(state, state->r_e); break;
+    case 0x9c: sbc8(state, state->r_h); break;
+    case 0x9d: sbc8(state, state->r_l); break;
+    case 0x9e: sbc8(state, state->memory[state->r_hl]); break;
+    case 0x9f: sbc8(state, state->r_a); break;
+      
+      
     case 0xa0: and8(state, &state->r_b); break; // and b
     case 0xa1: and8(state, &state->r_c); break; // and c
+    case 0xa2: and8(state, &state->r_d); break; // and c
+    case 0xa3: and8(state, &state->r_e); break; // and c
+    case 0xa4: and8(state, &state->r_h); break; // and c
+    case 0xa5: and8(state, &state->r_l); break; // and c
+    case 0xa6: and8(state, &state->memory[state->r_hl]); break; // and c
+    case 0xa7: and8(state, &state->r_a); break; // and c
     case 0xa8: xor8(state, state->r_b); break; // xor b
     case 0xa9: xor8(state, state->r_c); break; // xor c
     case 0xaa: xor8(state, state->r_d); break; // xor d
@@ -867,9 +1017,23 @@ int emulate_op(state_t *state) {
     case 0xad: xor8(state, state->r_l); break; // xor l
     case 0xae: xor8(state, state->memory[state->r_hl]); break; // xor (hl)
     case 0xaf: xor8(state, state->r_a); break; // xor a
+
+    case 0xb0: or8(state, &state->r_b); break; // or a
+    case 0xb1: or8(state, &state->r_c); break; // or a
+    case 0xb2: or8(state, &state->r_d); break; // or a
+    case 0xb3: or8(state, &state->r_e); break; // or a
+    case 0xb4: or8(state, &state->r_h); break; // or a
+    case 0xb5: or8(state, &state->r_l); break; // or a
     case 0xb6: or8(state, &state->memory[state->r_hl]); break;// or (hl)
     case 0xb7: or8(state, &state->r_a); break; // or a
+    case 0xb8: cp8(state, state->r_b); break; // cp (hl)
+    case 0xb9: cp8(state, state->r_c); break; // cp (hl)
+    case 0xba: cp8(state, state->r_d); break; // cp (hl)
+    case 0xbb: cp8(state, state->r_e); break; // cp (hl)
+    case 0xbc: cp8(state, state->r_h); break; // cp (hl)
+    case 0xbd: cp8(state, state->r_l); break; // cp (hl)
     case 0xbe: cp8(state, state->memory[state->r_hl]); break; // cp (hl)
+    case 0xbf: cp8(state, state->r_a); break; // cp (hl)
 
     case 0xc0: // ret nz
       {
@@ -1004,6 +1168,26 @@ int emulate_op(state_t *state) {
             state->r_pc += 1;
         }
         break;
+    case 0xd6: // sub *
+      {
+        uint8_t data = code[1];
+        if (((state->r_a ^ data) & 0x80) == 0 
+            && ((1 ^ (state->r_a - data)) & 0x80) != 0) 
+          state->flags.pv = 1;
+        else
+          state->flags.pv = 0;
+        if (state->r_a < data)
+          state->flags.c = 1;
+        else
+          state->flags.c = 0;
+        state->flags.h = (((state->r_a & 0xf) - (data & 0xf)) & 0x10) > 1;
+        state->r_a -= data;
+        state->flags.n = 0;
+        state->flags.z = (state->r_a == 0);
+        state->flags.s = ((state->r_a & 0x80) == 0x80);
+        state->r_pc += 2;
+      }
+      break;
     case 0xd8: // ret c
       {
         if (state->flags.c == 1)
@@ -1046,7 +1230,27 @@ int emulate_op(state_t *state) {
         }
         break;
     case 0xdd: emulate_op_dd(state); break;
-        
+    case 0xde: // sbc a, *
+      {
+        uint16_t total = state->r_a;
+        uint16_t value = code[1] + state->flags.c;
+        state->flags.h = ((((total & 0x0f) - (value & 0x0f)) & 0x10) != 0); // TODO
+        total -= value;
+        state->flags.c = ((total & 0x100) != 0);
+
+        uint16_t sign1 = state->r_a & 0x80;
+        uint16_t sign2 = value & 0x80;
+        uint16_t sign3 = total & 0x80;
+        state->flags.pv = (sign1 != sign2 && sign3 != sign1);
+        state->flags.s = ((total & 0x80) != 0);
+        state->flags.z = (total == 0);
+        state->flags.n = 1;
+        state->r_a = total & 0xff;
+        state->flags.f3 = (state->r_a & 0b0001000) >> 3;
+        state->flags.f5 = (state->r_a & 0b0100000) >> 5;
+        state->r_pc += 2;
+      }
+      break;
     case 0xe0: // ret po
       {
         if (state->flags.pv != 1)
@@ -1128,6 +1332,7 @@ int emulate_op(state_t *state) {
             emulate_op_ed(state);
         }
         break;
+    case 0xee: xor8(state, code[1]); state->r_pc++; break; // xor *
     case 0xf0: // ret p
       {
         if (state->flags.s != 1)
@@ -1166,6 +1371,7 @@ int emulate_op(state_t *state) {
             state->r_pc += 1;
         }
         break;
+    case 0xf6: or8(state, &code[1]); state->r_pc++; break; // or *
     case 0xf8: // ret m
       {
         if (state->flags.s == 1)

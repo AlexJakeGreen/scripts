@@ -238,6 +238,7 @@ void disassemble_op(state_t *state) {
       
     case 0xd4: printf("call nc, %04x", *((uint16_t *)(&code[1]))); break;
     case 0xd5: printf("push de"); break;
+    case 0xd6: printf("sub %02x", code[1]); break;
     case 0xd8: printf("ret c"); break;
     case 0xd9: printf("exx"); break;
     case 0xda: printf("jp c, %04x", *((uint16_t *)(&code[1]))); break;
