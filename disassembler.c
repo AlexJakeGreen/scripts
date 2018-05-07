@@ -212,6 +212,8 @@ void disassemble_op(state_t *state) {
     case 0x7e: log_message("ld a, (hl)"); break;
     case 0x7f: log_message("ld a, a"); break;
 
+    case 0x80 ... 0x9f: log_message("add a, r"); break;
+        
     case 0xa0: log_message("and b"); break;
     case 0xa1: log_message("and c"); break;
     case 0xa2: log_message("and d"); break;
@@ -229,9 +231,10 @@ void disassemble_op(state_t *state) {
     case 0xae: log_message("xor (hl)"); break;
     case 0xaf: log_message("xor a"); break;
 
-    case 0xb6: log_message("or (hl)"); break;
-    case 0xb7: log_message("or a"); break;
-    case 0xbe: log_message("cp (hl)"); break;
+    case 0xb0 ... 0xbf: break;
+    /* case 0xb6: log_message("or (hl)"); break; */
+    /* case 0xb7: log_message("or a"); break; */
+    /* case 0xbe: log_message("cp (hl)"); break; */
         
     case 0xc0: log_message("ret nz"); break;
     case 0xc1: log_message("pop bc"); break;

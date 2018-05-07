@@ -38,7 +38,7 @@ int main(int argc, const char * argv[]) {
   state->memory[6] = 0x00;
   state->memory[7] = 0xc9;       /* RET */
         
-  printf("=====================\n");  
+  // printf("=====================\n");  
   int done = 0;
   
   while (done == 0) {

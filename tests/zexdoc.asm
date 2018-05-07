@@ -101,74 +101,74 @@ done:	ld	de,msg2
 	jp	0		; warm boot
 
 tests:
-	dw	adc16                     ; 013a
-	dw	add16
-	dw	add16x
-	dw	add16y
-	dw	alu8i
-	dw	alu8r
-	dw	alu8rx
-	dw	alu8x
-	dw	bitx
-	dw	bitz80
-	dw	cpd1
-	dw	cpi1
-	dw	daa
-	dw	inca
-	dw	incb
-	dw	incbc
-	dw	incc
-	dw	incd
-	dw	incde
-	dw	ince
-	dw	inch
-	dw	inchl
-	dw	incix
-	dw	inciy
-	dw	incl
-	dw	incm
-	dw	incsp
-	dw	incx
-	dw	incxh
-	dw	incxl
-	dw	incyh
-	dw	incyl
-	dw	ld161
-	dw	ld162
-	dw	ld163
-	dw	ld164
-	dw	ld165
-	dw	ld166
-	dw	ld167
-	dw	ld168
-	dw	ld16im
-	dw	ld16ix
-	dw	ld8bd
-	dw	ld8im
-	dw	ld8imx
-	dw	ld8ix1
-	dw	ld8ix2
-	dw	ld8ix3
-	dw	ld8ixy
-	dw	ld8rr
-	dw	ld8rrx
-	dw	lda
-	dw	ldd1
-	dw	ldd2
-	dw	ldi1
-	dw	ldi2
-	dw	neg
-	dw	rld
-	dw	rot8080
-	dw	rotxy
-	dw	rotz80
-	dw	srz80
-	dw	srzx
-	dw	st8ix1
-	dw	st8ix2
-	dw	st8ix3
-	dw	stabd
-	dw	0
+	dw	adc16                     ; c201
+	dw	add16			  ; 2202
+	dw	add16x			  ; 8202
+	dw	add16y			  ; e202
+	dw	alu8i			  ; 4203
+	dw	alu8r			  ; a203
+	dw	alu8rx			  ; 0204
+	dw	alu8x			  ; 6204
+	dw	bitx			  ; c204
+	dw	bitz80			  ; 2205
+	dw	cpd1			  ; 8205
+	dw	cpi1			  ; e205
+	dw	daa			  ; 4206
+	dw	inca			  ; a206 +
+	dw	incb			  ; 0207
+	dw	incbc			  ; 6207
+	dw	incc			  ; c207
+	dw	incd			  ; 2208
+	dw	incde			  ; 8208
+	dw	ince			  ; e208
+	dw	inch			  ; 4209
+	dw	inchl			  ; a209
+	dw	incix			  ; 020a
+	dw	inciy			  ; 620a
+	dw	incl			  ; c20a
+	dw	incm			  ; 220b
+	dw	incsp			  ; 820b
+	dw	incx			  ; e20b
+	dw	incxh			  ; 420c
+	dw	incxl			  ; a20c
+	dw	incyh			  ; 020d
+	dw	incyl			  ; 620d
+	dw	ld161			  ; c20d
+	dw	ld162			  ; 220e
+	dw	ld163			  ; 820e
+	dw	ld164			  ; e20e
+	dw	ld165			  ; 420f
+	dw	ld166			  ; a20f
+	dw	ld167			  ; 0210
+	dw	ld168			  ; 6210
+	dw	ld16im			  ; c210
+	dw	ld16ix			  ; 2211
+	dw	ld8bd			  ; 8211
+	dw	ld8im			  ; e211
+	dw	ld8imx			  ; 4212
+	dw	ld8ix1			  ; a212
+	dw	ld8ix2			  ; 0213
+	dw	ld8ix3			  ; 6213
+	dw	ld8ixy			  ; c213
+	dw	ld8rr			  ; 2214
+	dw	ld8rrx			  ; 8214
+	dw	lda			  ; e214
+	dw	ldd1			  ; 4215
+	dw	ldd2			  ; a215
+	dw	ldi1			  ; 0216
+	dw	ldi2			  ; 6216
+	dw	neg			  ; c216
+	dw	rld			  ; 2217
+	dw	rot8080			  ; 8217
+	dw	rotxy			  ; e217
+	dw	rotz80			  ; 4218
+	dw	srz80			  ; a218
+	dw	srzx			  ; 0219
+	dw	st8ix1			  ; 6219
+	dw	st8ix2			  ; c219
+	dw	st8ix3			  ; 221a
+	dw	stabd			  ; 821a
+	dw	0			  ; 0000
 
 tstr:	macro	insn,memop,iy,ix,hl,de,bc,flags,acc,sp
 	local	lab
