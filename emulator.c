@@ -391,15 +391,14 @@ void emulate_fd_cb(state_t *state) {
             state->r_pc += 4;
         }
         break;
-    case 0x46: // bit 0, (iy + *)
-        {
-            int8_t val = code[2];
-            uint16_t addr = state->r_iy + val;
-            uint8_t mem = state->memory[addr];
-            bit8(state, 0, mem);
-            state->r_pc += 4;
-        }
-        break;
+    case 0x40 ... 0x47: bit8(state, 0, state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x48 ... 0x4f: bit8(state, 1, state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x50 ... 0x57: bit8(state, 2, state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x58 ... 0x5f: bit8(state, 3, state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x60 ... 0x67: bit8(state, 4, state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x68 ... 0x6f: bit8(state, 5, state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x70 ... 0x77: bit8(state, 6, state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x78 ... 0x7f: bit8(state, 7, state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 4; break;
     default:
         {
             printf("\nemul: unimplemented instruction: %02x %02x %02x %02x\n", code[0], code[1], code[2], code[3]);
@@ -566,18 +565,18 @@ void emulate_op_cb(state_t *state) {
 
 void emulate_op_dd_cb(state_t *state) {
     uint8_t *code = &state->memory[state->r_pc];
-    switch(code[2]) {
+    switch(code[3]) {
 
     case 0x01: state->r_pc += 4; break;
         
-    case 0x40 ... 0x47: bit8(state, 0, state->memory[state->r_ix + code[2]]); state->r_pc += 4; break;
-    case 0x48 ... 0x4f: bit8(state, 1, state->memory[state->r_ix + code[2]]); state->r_pc += 4; break;
-    case 0x50 ... 0x57: bit8(state, 2, state->memory[state->r_ix + code[2]]); state->r_pc += 4; break;
-    case 0x58 ... 0x5f: bit8(state, 3, state->memory[state->r_ix + code[2]]); state->r_pc += 4; break;
-    case 0x60 ... 0x67: bit8(state, 4, state->memory[state->r_ix + code[2]]); state->r_pc += 4; break;
-    case 0x68 ... 0x6f: bit8(state, 5, state->memory[state->r_ix + code[2]]); state->r_pc += 4; break;
-    case 0x70 ... 0x77: bit8(state, 6, state->memory[state->r_ix + code[2]]); state->r_pc += 4; break;
-    case 0x78 ... 0x7f: bit8(state, 7, state->memory[state->r_ix + code[2]]); state->r_pc += 4; break;
+    case 0x40 ... 0x47: bit8(state, 0, state->memory[state->r_ix + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x48 ... 0x4f: bit8(state, 1, state->memory[state->r_ix + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x50 ... 0x57: bit8(state, 2, state->memory[state->r_ix + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x58 ... 0x5f: bit8(state, 3, state->memory[state->r_ix + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x60 ... 0x67: bit8(state, 4, state->memory[state->r_ix + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x68 ... 0x6f: bit8(state, 5, state->memory[state->r_ix + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x70 ... 0x77: bit8(state, 6, state->memory[state->r_ix + (int8_t)code[2]]); state->r_pc += 4; break;
+    case 0x78 ... 0x7f: bit8(state, 7, state->memory[state->r_ix + (int8_t)code[2]]); state->r_pc += 4; break;
 
     default:
         {
