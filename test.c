@@ -94,19 +94,18 @@ int main(int argc, const char * argv[]) {
     while (state->r_pc < (addr + count) && res == 0) {
         res = emulate_op(state);
     }
-/*
-    printf("===================\n");
-    printf("%s", opcode);
 
-    for (int i=0; i<count; i++) {
-        printf("%04x %02x\n", i, state->memory[i]);
-    }
+    /* printf("===================\n"); */
+    /* printf("%s", opcode); */
 
-    for (int i=count; i<0xffff; i++) {
-        if (state->memory[i])
-            printf("%04x %02x\n", i, state->memory[i]);
-    }
-*/
+    /* for (int i=0; i<count; i++) { */
+    /*     printf("%04x %02x\n", i, state->memory[i]); */
+    /* } */
+
+    /* for (int i=count; i<0xffff; i++) { */
+    /*     if (state->memory[i]) */
+    /*         printf("%04x %02x\n", i, state->memory[i]); */
+    /* } */
     if (res == 0) {
     printf("%04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x\n",
            state->r_af, state->r_bc, state->r_de, state->r_hl,
