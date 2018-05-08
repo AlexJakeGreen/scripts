@@ -342,6 +342,27 @@ void emulate_op_ed(state_t * state) {
             state->r_pc += 2;
         }
         break;
+    case 0xb1: // cpir
+      {
+        uint16_t res;
+        do
+          {
+            res = state->r_a - state->memory[state->r_hl];
+            state->flags.h = ((((state->r_a & 0xf) - (state->memory[state->r_hl] & 0xf)) & 0x10) != 0);
+            state->flags.n = 1;
+            
+            state->flags.f3 = ((res - state->flags.h) & 0b0001000) >> 3;
+            state->flags.f5 = ((res - state->flags.h) & 0b0000010) >> 1;
+            state->flags.s = ((res & 0x80) != 0);
+            state->flags.z = ((res & 0xff) == 0);
+
+            state->r_hl++;
+            state->r_bc--;
+
+          } while(state->r_bc != 0 && state->flags.z == 0);
+        state->r_pc += 2;
+      }
+      break;
     case 0xb9: // cpdr
         {
             uint16_t res;
