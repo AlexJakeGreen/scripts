@@ -7,6 +7,6 @@
 #include "state.h"
 
 // Read rom file into memory
-int read_rom_file(state_t *state, const char *filename, int offset);
+int read_rom_file(uint8_t *data, const char *filename);
 
 #endif

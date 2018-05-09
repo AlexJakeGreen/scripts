@@ -10,9 +10,7 @@ int main(int argc, const char * argv[]) {
         printf("Usage: ./test <hex_code>\n");
         exit(EXIT_FAILURE);
     }
-/*
-    printf("===================\n");
-*/
+
     FILE *fp;
     char *line = NULL;
     size_t len = 0;
@@ -27,8 +25,12 @@ int main(int argc, const char * argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    state_t *state = calloc(1, sizeof(state_t));
-    state->memory = calloc(1, RAM_SIZE);
+    uint8_t data[RAM_SIZE];
+    int fsize = 0;
+    int rom_offset = 0;
+    em_init(data, fsize, rom_offset);
+
+    state_t *state = em_get_state();
     
     // op code
     char opcode[8];
@@ -70,7 +72,7 @@ int main(int argc, const char * argv[]) {
         uint8_t code = (((line[i]<97)?line[i]-48:line[i]-87)<<4) + ((line[i+1]<97)?line[i+1]-48:line[i+1]-87);
 
         /* printf("mem[%04x + %02x] = %02x (%c%c)\n", addr, count, code, line[i], line[i+1]); */
-        state->memory[addr + count] = code;
+        em_setmem(addr + count, code);
         count++;
     }
 
@@ -86,26 +88,27 @@ int main(int argc, const char * argv[]) {
             uint8_t code = (((line[i]<97)?line[i]-48:line[i]-87)<<4) + ((line[i+1]<97)?line[i+1]-48:line[i+1]-87);
 
             /* printf("mem[%04x + %02x] = %02x (%c%c)\n", addr2, count2, code, line[i], line[i+1]); */
-            state->memory[addr2 + count2] = code;
+            em_setmem(addr2 + count2, code);
             count2++;
         }
     }
     int res = 0;
     while (state->r_pc < (addr + count) && res == 0) {
+        printf("1");
         res = emulate_op(state);
     }
 
-    /* printf("===================\n"); */
-    /* printf("%s", opcode); */
+    printf("===================\n");
+    printf("%s", opcode);
 
-    /* for (int i=0; i<count; i++) { */
-    /*     printf("%04x %02x\n", i, state->memory[i]); */
-    /* } */
+    for (int i=0; i<count; i++) {
+        printf("%04x %02x\n", i, state->memory[i]);
+    }
 
-    /* for (int i=count; i<0xffff; i++) { */
-    /*     if (state->memory[i]) */
-    /*         printf("%04x %02x\n", i, state->memory[i]); */
-    /* } */
+    for (int i=count; i<0xffff; i++) {
+        if (state->memory[i])
+            printf("%04x %02x\n", i, state->memory[i]);
+    }
     if (res == 0) {
     printf("%04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x\n",
            state->r_af, state->r_bc, state->r_de, state->r_hl,
