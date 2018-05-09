@@ -321,14 +321,7 @@ void emulate_op_ed(state_t * state) {
     uint8_t *code = &state->memory[state->r_pc];
     switch(code[1]) {
     case 0x42: sbc16((uint16_t *)(void *)&state->r_hl, state->r_bc); state->r_pc += 2; break; // sbc hl, bc
-    case 0x43:
-        {
-            uint16_t addr = *((uint16_t *)(&code[2]));
-            state->memory[addr] = state->r_c;
-            state->memory[addr + 1] = state->r_b;
-            state->r_pc += 4;
-        }
-        break;
+    case 0x43: *(uint16_t *)&state->memory[*((uint16_t *)(&code[2]))] = state->r_bc; state->r_pc += 4; break;
     case 0x44:
         {
             uint16_t res = (uint16_t)(int16_t)(0 - state->r_a);
@@ -837,8 +830,7 @@ void emulate_op_fd(state_t *state) {
     case 0x85: add8(state->r_iyl); state->r_pc++; break;
     case 0x86:
         {
-            int8_t val = code[2];
-            add8(state->memory[(uint16_t)(state->r_iy + val)]);
+            add8(state->memory[(uint16_t)(state->r_iy + (int8_t)code[2])]);
             state->r_pc += 2;
         }
         break;
@@ -1379,13 +1371,18 @@ int emulate_op() {
          break;
     case 0x17:
         {
-            uint8_t val = state->r_a << 1;
-            val = (val & 0x01) | state->flags.c;
-            state->flags.c = state->r_a >> 7;
-            state->r_a = val;
+            uint8_t a = state->r_a << 1;
+            a = a | state->flags.c;
+            state->flags.c = (state->r_a & 0x80) != 0;
+            state->r_a = a;
+            state->flags.n = 0;
+            state->flags.h = 0;
+            state->flags.f3 = (state->r_a & 0b0001000) >> 3;
+            state->flags.f5 = (state->r_a & 0b0100000) >> 5;
             state->r_pc++;
         }
         break;
+    case 0x18: state->r_pc += (int8_t)code[1] + 2; break;
     case 0x19: add16((uint16_t *)(void *)&state->r_hl, (uint16_t *)(void *)&state->r_de); state->r_pc++; break; // add hl, de
     case 0x1a: state->r_a = state->memory[state->r_de]; state->r_pc++; break; // ld a, (de)
     case 0x1b: state->r_de--; state->r_pc++; break;
@@ -1394,8 +1391,13 @@ int emulate_op() {
     case 0x1e: state->r_e = code[1]; state->r_pc += 2; break;
     case 0x1f:
         {
-            state->r_a = (state->flags.c << 7) | (state->r_a >> 1);
-            state->flags.c = state->r_a >> 7;
+            uint8_t c = state->r_a & 0x01;
+            state->r_a = (state->r_a >> 1) | (state->flags.c << 7);
+            state->flags.c = c;
+            state->flags.n = 0;
+            state->flags.h = 0;
+            state->flags.f3 = (state->r_a & 0b0001000) >> 3;
+            state->flags.f5 = (state->r_a & 0b0100000) >> 5;
             state->r_pc++;
         }
         break;

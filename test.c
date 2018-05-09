@@ -50,12 +50,11 @@ int main(int argc, const char * argv[]) {
     state->_r_af = af_; state->_r_bc = bc_; state->_r_de = de_; state->_r_hl = hl_;
     state->r_ix = ix; state->r_iy = iy; state->r_sp = sp; state->r_pc = pc;
 
-    /*
-    printf("%04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x\n",
-           state->r_af, state->r_bc, state->r_de, state->r_hl,
-           state->_r_af, state->_r_bc, state->_r_de, state->_r_hl,
-           state->r_ix, state->r_iy, state->r_sp, state->r_pc);
-    */
+    
+    /* printf("%04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x\n", */
+    /*        state->r_af, state->r_bc, state->r_de, state->r_hl, */
+    /*        state->_r_af, state->_r_bc, state->_r_de, state->_r_hl, */
+    /*        state->r_ix, state->r_iy, state->r_sp, state->r_pc); */
 
     // other registers - skip them
     getline(&line, &len, fp);
@@ -109,12 +108,12 @@ int main(int argc, const char * argv[]) {
         if (state->memory[i])
             printf("%04x %02x\n", i, state->memory[i]);
     }
-    if (res == 0) {
+    /* if (res == 0) { */
     printf("%04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x %04x\n",
            state->r_af, state->r_bc, state->r_de, state->r_hl,
            state->_r_af, state->_r_bc, state->_r_de, state->_r_hl,
            state->r_ix, state->r_iy, state->r_sp, state->r_pc);
-    }
+    /* } */
 
 
     uint8_t n = state->r_f;
