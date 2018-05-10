@@ -12,10 +12,14 @@ uint32_t pixels[SCREEN_WIDTH * SCREEN_HEIGHT];
 uint8_t buf[DISPLAY_ATTRS_END - DISPLAY_PIXELS_START + 1];
 
 int main(int argc, char **argv) {
-    uint8_t data[0xffff];
-    int fsize = read_rom_file(data, "/Users/green/projects/z80/roms/48k.rom");
-    /* int fsize = read_rom_file(data, "/Users/green/projects/z80/roms/48.bin"); */
-    /* int fsize = read_rom_file(data, "/Users/green/projects/z80/roms/TRDOS.ROM"); */
+  if (argc != 2) {
+    printf("Usage: ./test <hex_code>\n");
+    exit(EXIT_FAILURE);
+  }
+
+
+  uint8_t data[0xffff];
+    int fsize = read_rom_file(data, argv[1]);
 
     uint16_t rom_offset = 0x0000;
     em_init(data, fsize, rom_offset);

@@ -785,8 +785,8 @@ void emulate_op_fd(state_t *state) {
     case 0x2c: inc8(state, &state->r_iyl); state->r_pc += 2; break;
     case 0x2d: dec8(state, &state->r_iyl); state->r_pc += 2; break;
     case 0x2e: state->r_iyl = code[2]; state->r_pc += 3; break;
-    case 0x34: inc8(state, &state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 3; break;
-    case 0x35: dec8(state, &state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 3; break;
+    case 0x34: inc8(state, &state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 2; break;
+    case 0x35: dec8(state, &state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 2; break;
     case 0x36: state->memory[state->r_iy + (int8_t)code[2]] = code[3]; state->r_pc += 4; break;
     case 0x39: add16((uint16_t *)(void *)&state->r_iy, (uint16_t *)(void *)&state->r_sp); state->r_pc += 2; break; // add iy, sp
 
@@ -1458,7 +1458,7 @@ int emulate_op() {
         break;
     case 0x20: // jr nz, *
       {
-        if (state->flags.z != 1)
+        if (COND_NZ)
             state->r_pc += (int8_t)code[1] + 2;
         else
           state->r_pc += 2;
@@ -1516,7 +1516,7 @@ int emulate_op() {
     case 0x28: // jr z, *
       {
         int8_t c = code[1];
-        if (state->flags.z == 1)
+        if (COND_Z)
           state->r_pc += c + 2;
         else
           state->r_pc += 2;
@@ -1543,7 +1543,7 @@ int emulate_op() {
     case 0x2f: state->r_a ^= 0xff; state->r_pc++; state->flags.h = 1; state->flags.n = 1; break;
     case 0x30: // jr nc, *
       {
-        if (state->flags.c != 1)
+        if (COND_NC)
             state->r_pc += (int8_t)code[1] + 2;
         else
           state->r_pc += 2;
@@ -1565,7 +1565,7 @@ int emulate_op() {
     case 0x38: // jr c, *
       {
         int8_t c = code[1];
-        if (state->flags.c == 1)
+        if (COND_C)
           state->r_pc += c + 2;
         else
           state->r_pc += 2;
