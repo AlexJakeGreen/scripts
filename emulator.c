@@ -32,6 +32,13 @@ void em_setmem(uint16_t addr, uint8_t val) {
     state->memory[addr] = val;
 }
 
+void em_get_mem(uint8_t *buf, uint16_t start, uint16_t end) {
+    int i = 0;
+    for(uint16_t j=start; j <= end; j++) {
+        buf[i++] = state->memory[j];
+    }
+}
+
 state_t *em_get_state() {
     return state;
 }
@@ -317,6 +324,12 @@ void inc8(state_t *state, uint8_t *r) {
     state->flags.f5 = (*r & 0b0100000) >> 5;
 }
 
+void set_bit_mem8(int num, uint16_t addr, int bitval) {
+    uint8_t val = state->memory[addr];
+    state->memory[addr] = (val & ~(1<<num)) | (bitval << num);
+}
+
+
 void emulate_op_ed(state_t * state) {
     uint8_t *code = &state->memory[state->r_pc];
     switch(code[1]) {
@@ -341,6 +354,7 @@ void emulate_op_ed(state_t * state) {
             state->r_pc += 2;
         }
         break;
+    case 0x47: state->r_i = state->r_a; state->r_r = state->r_a; state->r_pc += 2; break; // TODO
     case 0x4a: adc16(state, (uint16_t *)(void *)&state->r_hl, (uint16_t *)(void *)&state->r_bc); state->r_pc += 2; break; // adc hl, bc
     case 0x4b:
         {
@@ -359,6 +373,7 @@ void emulate_op_ed(state_t * state) {
             state->r_pc += 4;
         }
         break;
+    case 0x56: state->interrupt_mode = 1; state->r_pc += 2; break; // TODO
     case 0x5a: adc16(state, (uint16_t *)(void *)&state->r_hl, (uint16_t *)(void *)&state->r_de); state->r_pc += 2; break; // adc hl, de
     case 0x5b:
         {
@@ -418,6 +433,7 @@ void emulate_op_ed(state_t * state) {
             state->r_pc += 4;
         }
         break;
+    case 0x78: state->r_pc += 2; break; // TODO
     case 0x7a: adc16(state, (uint16_t *)(void *)&state->r_hl, (uint16_t *)(void *)&state->r_sp); state->r_pc += 2; break; // adc hl, sp
     case 0x7b: // ld sp, (**)
         {
@@ -566,7 +582,6 @@ void emulate_op_ed(state_t * state) {
     }
 }
 
-
 void emulate_fd_cb(state_t *state) {
     uint8_t *code = &state->memory[state->r_pc];
     switch(code[3]) {
@@ -711,6 +726,25 @@ void emulate_fd_cb(state_t *state) {
     case 0x68 ... 0x6f: bit8(5, state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 4; break;
     case 0x70 ... 0x77: bit8(6, state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 4; break;
     case 0x78 ... 0x7f: bit8(7, state->memory[state->r_iy + (int8_t)code[2]]); state->r_pc += 4; break;
+
+    case 0x86: set_bit_mem8(0, state->r_iy + (int8_t)code[2], 0); state->r_pc += 4; break;
+    case 0x8e: set_bit_mem8(1, state->r_iy + (int8_t)code[2], 0); state->r_pc += 4; break;
+    case 0x96: set_bit_mem8(2, state->r_iy + (int8_t)code[2], 0); state->r_pc += 4; break;
+    case 0x9e: set_bit_mem8(3, state->r_iy + (int8_t)code[2], 0); state->r_pc += 4; break;
+    case 0xa6: set_bit_mem8(4, state->r_iy + (int8_t)code[2], 0); state->r_pc += 4; break;
+    case 0xae: set_bit_mem8(5, state->r_iy + (int8_t)code[2], 0); state->r_pc += 4; break;
+    case 0xb6: set_bit_mem8(6, state->r_iy + (int8_t)code[2], 0); state->r_pc += 4; break;
+    case 0xbe: set_bit_mem8(7, state->r_iy + (int8_t)code[2], 0); state->r_pc += 4; break;
+
+    case 0xc6: set_bit_mem8(0, state->r_iy + (int8_t)code[2], 1); state->r_pc += 4; break;
+    case 0xce: set_bit_mem8(1, state->r_iy + (int8_t)code[2], 1); state->r_pc += 4; break;
+    case 0xd6: set_bit_mem8(2, state->r_iy + (int8_t)code[2], 1); state->r_pc += 4; break;
+    case 0xde: set_bit_mem8(3, state->r_iy + (int8_t)code[2], 1); state->r_pc += 4; break;
+    case 0xe6: set_bit_mem8(4, state->r_iy + (int8_t)code[2], 1); state->r_pc += 4; break;
+    case 0xee: set_bit_mem8(5, state->r_iy + (int8_t)code[2], 1); state->r_pc += 4; break;
+    case 0xf6: set_bit_mem8(6, state->r_iy + (int8_t)code[2], 1); state->r_pc += 4; break;
+    case 0xfe: set_bit_mem8(7, state->r_iy + (int8_t)code[2], 1); state->r_pc += 4; break;
+
     default:
         {
             printf("\nemul: unimplemented instruction: %02x %02x %02x %02x\n", code[0], code[1], code[2], code[3]);
@@ -953,6 +987,26 @@ void emulate_op_cb(state_t *state) {
     case 0x7e: bit8(7, state->memory[state->r_hl]); state->r_pc += 2; break;
     case 0x7f: bit8(7, state->r_a); state->r_pc += 2; break;
 
+    case 0x86: set_bit_mem8(0, state->r_hl, 0); state->r_pc += 2; break;
+    case 0x8e: set_bit_mem8(1, state->r_hl, 0); state->r_pc += 2; break;
+    case 0x96: set_bit_mem8(2, state->r_hl, 0); state->r_pc += 2; break;
+    case 0x9e: set_bit_mem8(3, state->r_hl, 0); state->r_pc += 2; break;
+    case 0xa6: set_bit_mem8(4, state->r_hl, 0); state->r_pc += 2; break;
+    case 0xae: set_bit_mem8(5, state->r_hl, 0); state->r_pc += 2; break;
+    case 0xb6: set_bit_mem8(6, state->r_hl, 0); state->r_pc += 2; break;
+    case 0xbe: set_bit_mem8(7, state->r_hl, 0); state->r_pc += 2; break;
+
+    case 0xc6: set_bit_mem8(0, state->r_hl, 1); state->r_pc += 2; break;
+    case 0xce: set_bit_mem8(1, state->r_hl, 1); state->r_pc += 2; break;
+    case 0xd6: set_bit_mem8(2, state->r_hl, 1); state->r_pc += 2; break;
+    case 0xde: set_bit_mem8(3, state->r_hl, 1); state->r_pc += 2; break;
+    case 0xe6: set_bit_mem8(4, state->r_hl, 1); state->r_pc += 2; break;
+    case 0xee: set_bit_mem8(5, state->r_hl, 1); state->r_pc += 2; break;
+    case 0xf6: set_bit_mem8(6, state->r_hl, 1); state->r_pc += 2; break;
+    case 0xfe: set_bit_mem8(7, state->r_hl, 1); state->r_pc += 2; break;
+
+
+        
     default:
         {
             printf("\nemul: unimplemented instruction: %02x %02x\n", code[0], code[1]);
@@ -1266,12 +1320,13 @@ void emulate_op_dd(state_t *state) {
 
 int emulate_op() {
     uint8_t *code = &state->memory[state->r_pc];
-
-    if (state->r_pc > 0x0522 && state->r_pc < 0x05e2) {
-        printf("%04x %02x %04x %04x %04x %04x %04x |%02x|  ",
-               state->r_pc, code[0], state->r_af, state->r_bc, state->r_de, state->r_hl,
-               state->r_sp, state->memory[0x1d89]);
-    }
+    printf("%04x %02x %02x %02x %02x DE:%04x HL:%04x (HL):%02x\n", state->r_pc, code[0], code[1],
+           code[2], code[3], state->r_de, state->r_hl, state->memory[state->r_hl]);
+    /* if (state->r_pc > 0x0522 && state->r_pc < 0x05e2) { */
+    /*     printf("%04x %02x %04x %04x %04x %04x %04x |%02x|  ", */
+    /*            state->r_pc, code[0], state->r_af, state->r_bc, state->r_de, state->r_hl, */
+    /*            state->r_sp, state->memory[0x1d89]); */
+    /* } */
     
     switch(*code) {
     case 0x00: state->r_pc++; break; // nop
@@ -1337,7 +1392,7 @@ int emulate_op() {
         break;
     case 0x10: // djnz *
       {
-        print_state();
+          //print_state();
         state->r_b--;
         if (state->r_b != 0) {
             state->r_pc += (int8_t)code[1];
@@ -1345,7 +1400,7 @@ int emulate_op() {
         } else {
             state->r_pc += 2;
         }
-        print_state();
+        //print_state();
       }
       break;
     case 0x11: state->r_de = *((uint16_t *)(&code[1])); state->r_pc += 3; break; // ld de, **
@@ -1403,9 +1458,8 @@ int emulate_op() {
         break;
     case 0x20: // jr nz, *
       {
-        int8_t c = code[1];
         if (state->flags.z != 1)
-          state->r_pc += c + 2;
+            state->r_pc += (int8_t)code[1] + 2;
         else
           state->r_pc += 2;
       }
@@ -1428,15 +1482,6 @@ int emulate_op() {
     case 0x24: inc8(state, &state->r_h); break; // inc h
     case 0x25: dec8(state, &state->r_h); break; // dec h
     case 0x26: state->r_h = code[1]; state->r_pc += 2; break; // ld h, *
-    case 0x28: // jr z, *
-      {
-        int8_t c = code[1];
-        if (state->flags.z == 1)
-          state->r_pc += c + 2;
-        else
-          state->r_pc += 2;
-      }
-      break;
     case 0x27: // DAA
         /*
           Decimal Adjust Accumulator
@@ -1468,6 +1513,15 @@ int emulate_op() {
             state->r_pc++;
         }
         break;
+    case 0x28: // jr z, *
+      {
+        int8_t c = code[1];
+        if (state->flags.z == 1)
+          state->r_pc += c + 2;
+        else
+          state->r_pc += 2;
+      }
+      break;
     case 0x29: add16((uint16_t *)(void *)&state->r_hl, (uint16_t *)(void *)&state->r_hl); state->r_pc++; break; // add hl, hl
     case 0x2a: // ld hl, (**)
         {
@@ -1489,9 +1543,8 @@ int emulate_op() {
     case 0x2f: state->r_a ^= 0xff; state->r_pc++; state->flags.h = 1; state->flags.n = 1; break;
     case 0x30: // jr nc, *
       {
-        int8_t c = code[1];
         if (state->flags.c != 1)
-          state->r_pc += c + 2;
+            state->r_pc += (int8_t)code[1] + 2;
         else
           state->r_pc += 2;
       }
@@ -1687,24 +1740,28 @@ int emulate_op() {
         {
             uint16_t addr = *((uint16_t *)(&code[1]));
             state->r_pc += 3;
-            if (5 == addr) {
-                cpm_bdos(state);
-            } else if (0 == addr) {
-                exit(EXIT_SUCCESS);
-            } else {
+            /* if (5 == addr) { */
+            /*     cpm_bdos(state); */
+            /* } else if (0 == addr) { */
+            /*     exit(EXIT_SUCCESS); */
+            /* } else { */
                 stack_put16(state, state->r_pc);
                 state->r_pc = addr;
-            }
+            /* } */
         }
         break;
     case 0xce: adc8(code[1]); state->r_pc++; break; // adc a, *
      case 0xd0: ret(state, COND_NC); break; // ret nc
      case 0xd1: state->r_de = stack_get16(state); state->r_pc++; break; // pop de
      case 0xd2: jp(state, COND_NC, *((uint16_t *)(&code[1]))); break; // jp nc, **
-     case 0xd4: call(state, COND_NC, *((uint16_t *)(&code[1]))); break; // call nc, **
+
+    case 0xd3: state->r_pc += 2; break; // TODO
+         
+    case 0xd4: call(state, COND_NC, *((uint16_t *)(&code[1]))); break; // call nc, **
      case 0xd5: stack_put16(state, state->r_de); state->r_pc++; break;// push de
     case 0xd6: sub8(state, code[1]); state->r_pc++; break;
-     case 0xd8: ret(state, COND_C); break; // ret c
+    case 0xd7: stack_put16(state, ++state->r_pc); state->r_pc = 0x10; break;
+    case 0xd8: ret(state, COND_C); break; // ret c
     case 0xd9: // exx
       {
         uint16_t tmp;
@@ -1727,7 +1784,19 @@ int emulate_op() {
      case 0xe0: ret(state, state->flags.pv != 1); break; // ret po
      case 0xe1: state->r_hl = stack_get16(state); state->r_pc++; break; // pop hl
      case 0xe2: jp(state, COND_PO, *((uint16_t *)(&code[1]))); break; // jp po, **
-     case 0xe4: call(state, COND_PO, *((uint16_t *)(&code[1]))); break; // call po, **
+    case 0xe3:
+        {
+            uint8_t tmp;
+            tmp = state->memory[state->r_sp];
+            state->memory[state->r_sp] = state->r_l;
+            state->r_l = tmp;
+            tmp = state->memory[state->r_sp + 0x0001];
+            state->memory[state->r_sp + 0x0001] = state->r_h;
+            state->r_h = tmp;
+            state->r_pc++;
+        }
+        break;
+    case 0xe4: call(state, COND_PO, *((uint16_t *)(&code[1]))); break; // call po, **
      case 0xe5: stack_put16(state, state->r_hl); state->r_pc++; break; // push hl
      case 0xe6: and8(state, &code[1]); state->r_pc++; break; // and *
      case 0xe8: ret(state, COND_PE); break; // ret pe
@@ -1741,21 +1810,21 @@ int emulate_op() {
             state->r_pc++;
         }
         break;
-     case 0xec: call(state, COND_PE, *((uint16_t *)(&code[1]))); break; // call pe, **
+    case 0xec: call(state, COND_PE, *((uint16_t *)(&code[1]))); break; // call pe, **
     case 0xed: emulate_op_ed(state); break; // extended op
     case 0xee: xor8(state, code[1]); state->r_pc++; break; // xor *
-     case 0xf0: ret(state, COND_P); break; // ret p
+    case 0xf0: ret(state, COND_P); break; // ret p
     case 0xf1: state->r_af = stack_get16(state); state->r_pc++; break; // pop af
-     case 0xf2: jp(state, COND_P, *((uint16_t *)(&code[1]))); break; // jp p, **
-    case 0xf3: /* printf("DI not implemented. Skipped\n"); */ state->r_pc++; break;
-     case 0xf4: call(state, COND_P, *((uint16_t *)(&code[1]))); break; // call p, **
-     case 0xf5: stack_put16(state, state->r_af); state->r_pc++; break; // push af
+    case 0xf2: jp(state, COND_P, *((uint16_t *)(&code[1]))); break; // jp p, **
+    case 0xf3: state->iff1 = state->iff2 = 0; state->r_pc++; break;
+    case 0xf4: call(state, COND_P, *((uint16_t *)(&code[1]))); break; // call p, **
+    case 0xf5: stack_put16(state, state->r_af); state->r_pc++; break; // push af
     case 0xf6: or8(state, &code[1]); state->r_pc++; break; // or *
-     case 0xf8: ret(state, COND_M); break; // ret m
+    case 0xf8: ret(state, COND_M); break; // ret m
     case 0xf9: state->r_sp = state->r_hl; state->r_pc++; break; // ld sp, hl
-     case 0xfa: jp(state, COND_M, *((uint16_t *)(&code[1]))); break; // jp m, **
-    case 0xfb: state->r_pc++; break; // ei // TODO
-     case 0xfc: call(state, COND_M, *((uint16_t *)(&code[1]))); break; // call m, **
+    case 0xfa: jp(state, COND_M, *((uint16_t *)(&code[1]))); break; // jp m, **
+    case 0xfb: state->iff1 = state->iff2 = 1; state->r_pc++; break; // ei // TODO
+    case 0xfc: call(state, COND_M, *((uint16_t *)(&code[1]))); break; // call m, **
     case 0xfd: emulate_op_fd(state); break;
     case 0xfe: cp8(state, code[1]); state->r_pc++; break; // cp *
     default: emul_unimplemented_op(*code); return 1; break;

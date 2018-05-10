@@ -120,6 +120,14 @@ typedef struct  __attribute__((__packed__)) {
     };
 
     uint8_t *memory;
+
+    uint8_t r_i;
+    uint8_t r_r;
+
+    uint8_t iff1;
+    uint8_t iff2;
+    
+    uint8_t interrupt_mode;
     
 } state_t;
 
