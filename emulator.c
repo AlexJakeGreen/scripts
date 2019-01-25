@@ -221,7 +221,9 @@ void stack_put16(state_t *state, uint16_t data) {
 }
 
 uint16_t stack_get16(state_t *state) {
-    uint16_t res = state->memory[state->r_sp++] | (state->memory[state->r_sp++] << 8);
+  uint8_t a;
+  a = state->memory[state->r_sp++];
+  uint16_t res = a | (state->memory[state->r_sp++] << 8);
     return res;
 }
 
@@ -259,7 +261,7 @@ void bit8(int n, uint8_t val) {
     state->flags.pv = state->flags.z;
     state->flags.f3 = (val & 0b0001000) >> 3;
     state->flags.f5 = (val & 0b0100000) >> 5;
-    state->flags.s = (n == 7 && (val & 0b1000000) == 1);
+    state->flags.s = ((n == 7 && (val & 0b1000000)) == 1);
 }
 
 void sbc16(uint16_t *r1, uint16_t val) {
@@ -590,7 +592,7 @@ void emulate_fd_cb(state_t *state) {
         {
             uint16_t addr = state->r_iy + code[3];
             uint8_t val = state->memory[addr];
-            state->flags.c = (val & 0x80) == 1;
+            state->flags.c = (val & 0x80) >> 7 == 1;
             val = val << 1;
             val |= state->flags.c;
             state->r_c = val;

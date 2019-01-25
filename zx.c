@@ -64,11 +64,11 @@ int main(int argc, char **argv) {
             /*         break; */
             /*     }     */
             /* } */
-            
+
             uint8_t yp, pix, attr;
             uint8_t ink = 0;
             uint8_t paper = 0;
-            uint8_t flash = 0;
+            uint8_t __attribute((unused)) flash = 0;
             uint8_t bright = 0;
             uint16_t pixel_addr, buf_addr, attr_addr;
             attr_addr = 6144;

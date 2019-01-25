@@ -1,6 +1,7 @@
 #ifndef H_STATE
 #define H_STATE
 
+#include <stdint.h>
 #include "stdlib.h"
 
 typedef struct {
@@ -22,7 +23,7 @@ typedef struct  __attribute__((__packed__)) {
             uint8_t r_b;
         };
     };
-    
+
     union {
         uint16_t _r_bc;
         struct {
@@ -47,7 +48,7 @@ typedef struct  __attribute__((__packed__)) {
         };
     };
 
-    
+
     union {
         uint16_t r_hl;
         struct {
@@ -63,7 +64,7 @@ typedef struct  __attribute__((__packed__)) {
             uint8_t _r_h;
         };
     };
-    
+
     union {
         uint16_t r_af;
         struct {
@@ -86,7 +87,6 @@ typedef struct  __attribute__((__packed__)) {
       };
     };
 
-    
     union {
         uint16_t r_ix;
         struct {
@@ -126,9 +126,9 @@ typedef struct  __attribute__((__packed__)) {
 
     uint8_t iff1;
     uint8_t iff2;
-    
+
     uint8_t interrupt_mode;
-    
+
 } state_t;
 
 #endif
